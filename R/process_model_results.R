@@ -1,5 +1,5 @@
 library(tidyverse)
-#' Process Model Results
+#' Create model results dataframe
 #'
 #' @param model_results A model output from the Recovery life cycle models (fall, spring, winter or late fall)
 #' @param scenario_name The name of the scenario that produced the model results.
@@ -9,8 +9,7 @@ library(tidyverse)
 #' baseline_model_results <- fallRunDSM::fall_run_model(mode = "simulate", ..params = fallRunDSM::r_to_r_baseline_params,
 #'                                                      seeds = baseline_seeds)
 #' process_model_results(baseline_model_results, "Baseline")
-
-process_model_results <- function(model_results, scenario_name) {
+create_model_results_dataframe <- function(model_results, scenario_name, chinook_run) {
   nat_spawn <- dplyr::as_tibble(model_results$spawners * model_results$proportion_natural_at_spawning) |>
     dplyr::mutate(location = fallRunDSM::watershed_labels) |>
     pivot_longer(cols = c(`1`:`20`), values_to = "value", names_to = "year") |>
@@ -48,7 +47,8 @@ process_model_results <- function(model_results, scenario_name) {
     mutate(preformance_metric = "Juveniles") |> glimpse()
 
   result_dataframe <- bind_rows(nat_spawn, all_spawn, juveniles, phos) |>
-    mutate(scenario = scenario_name) |>
+    mutate(scenario = scenario_name,
+           run = chinook_run) |>
     pivot_wider(values_from = value, names_from = preformance_metric) |>
     arrange(location, year) |>
     group_by(location) |>
@@ -59,7 +59,26 @@ process_model_results <- function(model_results, scenario_name) {
     ) |>
     ungroup() |>
     select(-nat_spawners_lead) |>
-    pivot_longer(cols = 4:9, names_to = "performance_metric", values_to = "value") |> glimpse()
+    pivot_longer(cols = 5:11, names_to = "performance_metric", values_to = "value") |> glimpse()
 
   return(result_dataframe)
+}
+
+#' Create model results dataframe
+#'
+#' @param model_results A model output from the Recovery life cycle models (fall, spring, winter or late fall)
+#' @param scenario_name The name of the scenario that produced the model results.
+#' @return A dataframe containing the following columns(location, year, scenario, performance_metric, value)
+juv_size_dist <- function(model_results, scenario_name) {
+  juveniles <- baseline_model_results$juveniles_at_chipps |>
+    as_tibble() |>
+    mutate(year = as.numeric(year)) |>
+    rename(location = watershed) |>
+    # TODO add month back in here but need it in output
+    group_by(year, location, size) |>
+    summarise(value = sum(juveniles_at_chipps, na.rm = TRUE)) |>
+    mutate(performance_metric = "Juveniles at Ocean Entry",
+           scenario = scenario_name) |> glimpse()
+
+  return(juveniles)
 }
