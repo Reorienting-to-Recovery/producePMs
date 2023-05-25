@@ -70,7 +70,7 @@ produce_independent_pops_pm <- function(model_results_df) {
 }
 
 ### 3.2 ###
-### TODO
+### TODO check with rene and alison
 # % of potential independent viable populations in each diversity group per ESU/run
 produce_independent_pops_per_diversity_group_pm <- function(model_results_df, selected_run) {
   # diversity groups same for all runs
@@ -124,13 +124,13 @@ produce_dependent_pops_per_diversity_group_pm <- function(model_results_df, sele
 produce_phos_pm <- function(model_results_df){
   phos <- model_results_df |>
     filter(performance_metric == "PHOS") |>
-    group_by(year, scenario) |>
+    group_by(year, scenario, run) |>
     summarize(average_phos = mean(value, na.rm = T)) |>
     ungroup() |>
     group_by(scenario, run) |>
-    summarize(avg_annual_phos = mean(average_crr, na.rm = T),
-              min_annual_phos = min(average_crr, na.rm = T),
-              max_annual_phos = max(average_crr, na.rm = T))
+    summarize(avg_annual_phos = mean(average_phos, na.rm = T),
+              min_annual_phos = min(average_phos, na.rm = T),
+              max_annual_phos = max(average_phos, na.rm = T))
   return(phos)
 }
 
@@ -234,4 +234,6 @@ produce_marine_nutrient_pm <- function(model_results, scenario_name){
            marine_derived_nutrient_pounds_per_sqmt = fish_total_pounds / area_sqmt) |> glimpse()
 }
 
-
+### 7 ###
+# time to recovery -------------------------------------------------------------
+# TODO add this
