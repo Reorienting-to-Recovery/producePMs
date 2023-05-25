@@ -61,24 +61,29 @@ create_model_results_dataframe <- function(model_results, scenario_name, chinook
     select(-nat_spawners_lead) |>
     pivot_longer(cols = 5:11, names_to = "performance_metric", values_to = "value") |> glimpse()
 
-  return(result_dataframe)
-}
+  # add juv and adult df
+  adults_age <- model_results$returning_adults |>
+    transmute(performance_metric = "Adult Age of Return",
+           scenario = scenario_name,
+           value = return_total,
+           location = watershed,
+           origin = origin,
+           year = return_sim_year,
+           age = return_sim_year - sim_year,
+           run = chinook_run) |> glimpse()
 
-#' Create model results dataframe
-#'
-#' @param model_results A model output from the Recovery life cycle models (fall, spring, winter or late fall)
-#' @param scenario_name The name of the scenario that produced the model results.
-#' @return A dataframe containing the following columns(location, year, scenario, performance_metric, value)
-juv_size_dist <- function(model_results, scenario_name) {
-  juveniles <- baseline_model_results$juveniles_at_chipps |>
+  juveniles <- model_results$juveniles_at_chipps |>
     as_tibble() |>
     mutate(year = as.numeric(year)) |>
     rename(location = watershed) |>
-    # TODO add month back in here but need it in output
-    group_by(year, location, size) |>
+    group_by(year, month, location, size) |>
     summarise(value = sum(juveniles_at_chipps, na.rm = TRUE)) |>
-    mutate(performance_metric = "Juveniles at Ocean Entry",
-           scenario = scenario_name) |> glimpse()
+    mutate(performance_metric = "Juveniles Size at Ocean Entry",
+           scenario = scenario_name,
+           run = chinook_run) |> glimpse()
 
-  return(juveniles)
+  full_results <- bind_rows(result_dataframe, adults_age, juveniles)
+
+  return(full_results)
 }
+
