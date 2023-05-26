@@ -178,7 +178,6 @@ produce_shannon_div_ind_size_pm <- function(model_results_df){
 ### 5.3 ###
 # Diversity of size and timing of juveniles at ocean entry ---------------------
 # size distribution & month of juveniles ---------------------------------------
-# TODO check if we want div index here
 produce_shannon_div_ind_size_and_timing_pm <- function(model_results_df){
   monthly_total <- model_results_df |>
     filter(performance_metric == "Juveniles Size at Ocean Entry") |>
@@ -209,7 +208,7 @@ produce_shannon_div_ind_size_and_timing_pm <- function(model_results_df){
 
 ### 6 ###
 # marine derived nutrient ------------------------------------------------------
-produce_marine_nutrient_pm <- function(model_results, scenario_name){
+produce_marine_nutrient_pm <- function(model_results_df, scenario_name){
 # prep chanel area (sqmt)
   chanel_area <- read_csv("data-raw/channel_areas.csv") |>
     mutate(sit_width = `width - sit` * 0.3048,
@@ -227,7 +226,7 @@ produce_marine_nutrient_pm <- function(model_results, scenario_name){
     pull(add_tmh_area) |>
     sum(na.rm = T) + sit_total_area_sqmt
 
-  produce_spawner_abundance_pm(model_results) |>
+  produce_spawner_abundance_pm(model_results_df) |>
     mutate(area_sqmt = ifelse(scenario == "Max Habitat",
                               max_hab_total_area_sqmt, sit_total_area_sqmt),
            fish_total_pounds = avg_annual_spawners * 21, # TODO assuming ~21 pounds
@@ -237,3 +236,5 @@ produce_marine_nutrient_pm <- function(model_results, scenario_name){
 ### 7 ###
 # time to recovery -------------------------------------------------------------
 # TODO add this
+
+

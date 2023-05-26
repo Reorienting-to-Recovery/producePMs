@@ -9,6 +9,7 @@ library(tidyverse)
 #' baseline_model_results <- fallRunDSM::fall_run_model(mode = "simulate", ..params = fallRunDSM::r_to_r_baseline_params,
 #'                                                      seeds = baseline_seeds)
 #' process_model_results(baseline_model_results, "Baseline")
+#' @export
 create_model_results_dataframe <- function(model_results, scenario_name, chinook_run) {
   nat_spawn <- dplyr::as_tibble(model_results$spawners * model_results$proportion_natural_at_spawning) |>
     dplyr::mutate(location = fallRunDSM::watershed_labels) |>

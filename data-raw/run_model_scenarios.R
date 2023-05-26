@@ -14,10 +14,10 @@ baseline_model_results <- fallRunDSM::fall_run_model(mode = "simulate", ..params
                                                      seeds = baseline_seeds)
 # 1 - TMH --------------------------------------------------------------------------
 # TODO add hatchery_release to max habitat params
-tmh_seeds <- fallRunDSM::fall_run_model(mode = "seed", ..params = fallRunDSM::r_to_r_tmh_params)
-
-tmh_model_results <- fallRunDSM::fall_run_model(mode = "simulate", ..params = fallRunDSM::r_to_r_tmh_params,
-                                                seeds = tmh_seeds)
+# tmh_seeds <- fallRunDSM::fall_run_model(mode = "seed", ..params = fallRunDSM::r_to_r_tmh_params)
+#
+# tmh_model_results <- fallRunDSM::fall_run_model(mode = "simulate", ..params = fallRunDSM::r_to_r_tmh_params,
+#                                                 seeds = tmh_seeds)
 # 2 - Run of River Flows  ----------------------------------------------------------
 # Maddee working on incorporating now to create data objects, we will need to create max_flow params
 

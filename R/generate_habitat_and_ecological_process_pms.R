@@ -1,11 +1,9 @@
 library(tidyverse)
-library(producePMs)
 
 ### 8.1 ###
 # Wetted acre days of suitable juvenile rearing habitat ------------------------
 # Present mean wetted acre days (mulitply total inchannel rearing & floodplain
 # habitat values by day in month, sum across all months, take annual average) report mean and range of values
-model_parameters <-  fallRunDSM::r_to_r_baseline_params
 produce_juvenile_wetted_acre_day_pm <- function(model_parameters, scenario, run){
   rearing_months <- switch(run,
                             "fall" = c(1:8),
@@ -46,7 +44,6 @@ produce_juvenile_wetted_acre_day_pm <- function(model_parameters, scenario, run)
 # Wetted acre days of suitable spawning habitat --------------------------------
 # Present mean wetted acre days (mulitply total inchannel rearing & floodplain
 # habitat values by day in month, sum across all months, take annual average) report mean and range of values
-model_parameters <-  fallRunDSM::r_to_r_baseline_params
 produce_spawning_wetted_acre_day_pm <- function(model_parameters, scenario, selected_run){
   spawning_months <- switch(run,
                             "fall" = c(10:12),
