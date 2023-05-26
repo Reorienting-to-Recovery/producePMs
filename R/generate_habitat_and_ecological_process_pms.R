@@ -73,6 +73,35 @@ produce_spawning_wetted_acre_day_pm <- function(model_parameters, scenario, sele
 
 ### 8.3 ###
 # Spawning habitat decay rate (as a proxy for riverine condition) --------------
+# convert this to habitat loss. yearly loss in capacity relative to the maximum
+# over the 20 year period - sum over 20 year period
+total_habitat_decay <- function(model_parameters){
+  habitats <- list(
+    spawning_habitat = model_params$spawning_habitat,
+    inchannel_habitat_fry = model_params$inchannel_habitat_fry,
+    inchannel_habitat_juvenile = model_params$inchannel_habitat_juvenile,
+    floodplain_habitat = model_params$floodplain_habitat,
+    weeks_flooded = model_params$weeks_flooded
+  )
+  # TODO confused about this - what is going on with decay - I thought it was driven by flow
+  decayed_habitat <- DSMscenario::load_scenario(scenario = DSMscenario::scenarios$NO_ACTION,
+                                              habitat_inputs = habitats,
+                                              species = DSMscenario::species$FALL_RUN,
+                                              spawn_decay_rate = model_params$spawn_decay_rate,
+                                              rear_decay_rate = model_params$rear_decay_rate,
+                                              spawn_decay_multiplier = model_params$spawn_decay_multiplier,
+                                              stochastic = FALSE)
+
+  spawning_decay <- DSMhabitat::square_meters_to_acres(sum(decayed_habitat$spawning_habitat -
+                                                             habitats$spawning_habitat))
+  fp_rearing_decay <- DSMhabitat::square_meters_to_acres(sum(decayed_habitat$floodplain_habitat -
+                                                         habitats$floodplain_habitat))
+  fry_rearing_decay <- DSMhabitat::square_meters_to_acres(sum(decayed_habitat$inchannel_habitat_fry -
+                                                               habitats$inchannel_habitat_fry))
+  juv_rearing_decay <- DSMhabitat::square_meters_to_acres(sum(decayed_habitat$inchannel_habitat_juv -
+                                                                habitats$inchannel_habitat_juv))
+
+}
 
 
 ### 9.1 ###
