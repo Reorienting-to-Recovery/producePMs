@@ -71,7 +71,7 @@ create_model_results_dataframe <- function(model_results, scenario_name, chinook
            location = watershed,
            origin = origin,
            year = return_sim_year,
-           size_or_age = return_sim_year - sim_year,
+           size_or_age = as.character(return_sim_year - sim_year),
            run = chinook_run) |> glimpse()
 
   juveniles <- model_results$juveniles_at_chipps |>
