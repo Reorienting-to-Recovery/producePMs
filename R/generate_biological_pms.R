@@ -127,7 +127,6 @@ produce_independent_pops_pm <- function(model_results_df) {
 }
 
 ### 3.2 ###
-### TODO check with rene and alison
 # % of potential independent viable populations in each diversity group per ESU/run
 #' Calculate Number of Independent Populations per Diversity Group
 #'
@@ -237,10 +236,8 @@ produce_phos_pm <- function(model_results_df){
 ### 5.1 ###
 # Age distribution of spawning adults;
 # Min % of each age class of adults, Age 4 >35%, Age 5+ >20%
-# TODO figure this one out shouldn't be this hard...
 # probably can just do based on return ratios
 # Calculate Total Years/Locations Meeting Categorical Return Age Criteria
-#'
 #' This function calculates the number of locations meeting the categorical return age criteria based on model results.
 #'
 #' @param model_results_df A data frame containing model results.
@@ -270,8 +267,7 @@ produce_categorical_return_age_pm <- function(model_results_df) {
            perc_age_5 = round(`5`/total_spawners * 100),
            meets_age_criteria = ifelse(perc_age_4 > 35 & perc_age_5 > 20, TRUE, FALSE)) |>
     group_by(scenario, run) |>
-    summarize(year_locations_meeting_age_criteria = sum(meets_age_criteria, na.rm = TRUE)) |>
-    glimpse()
+    summarize(year_locations_meeting_age_criteria = sum(meets_age_criteria, na.rm = TRUE))
 
   return(adults)
 }
@@ -358,13 +354,32 @@ produce_shannon_div_ind_size_and_timing_pm <- function(model_results_df){
 }
 
 ### 5.4 ###
-# Amount and relative % of available habitat of different types (measured in area and days)
-# TODO check in on this
-produce_carrying_capacity_vs_abundance <- function(model_results_df, model_parameters, run){
-  spawning_months <- switch(run,
+#' Calculate Carrying Capacity vs. Abundance
+#'
+#' This function calculates the carrying capacity vs. abundance based on the provided model
+#' results dataframe, model parameters, and run. Only spawning habitat is considered, not holding.
+#'
+#' @param model_results_df The model results dataframe.
+#' @param model_parameters The model parameters.
+#' @param run The selected run.
+#'
+#' @return A tibble with carrying capacity vs. abundance values.
+#' @export
+#'
+#' @examples
+#' model_results <- data.frame(
+#'   spawning_habitat = c(100, 200, 150, 250),
+#'   location = c("Location A", "Location B", "Location A", "Location B"),
+#'   year_date = c("Jan-2021", "Jan-2021", "Feb-2021", "Feb-2021")
+#' )
+#' model_parameters <- list(spawning_habitat = data.frame(location = c("Location A", "Location B"), year_date = "Jan-2021", value = 300))
+#'
+#' produce_carrying_capacity_vs_abundance(model_results, model_parameters, "fall")
+produce_carrying_capacity_vs_abundance <- function(model_results_df, model_parameters, selected_run){
+  spawning_months <- switch(selected_run,
                             "fall" = c(10:12),
-                            "spring" = c(3:6, 7:10), #TODO do we want to include holding and spawning months
-                            "winter" = c(1:4, 5:7), #TODO do we want to include holding and spawning months
+                            "spring" = c(7:10),
+                            "winter" = c(5:7),
                             "late fall" = c(10:12, 1:2))
   month_lookup <- tibble(month_num = c(1:12), month = month.abb)
   spawn_capacity <- model_parameters$spawning_habitat |>
@@ -381,8 +396,27 @@ produce_carrying_capacity_vs_abundance <- function(model_results_df, model_param
     summarise(average_monthly_annual_spawning_habitat = mean(total_monthly_spawning_habitat, na.rm = TRUE)) |>
     ungroup() |>
     mutate(spawner_capacity = round(average_monthly_annual_spawning_habitat/
-             fallRunDSM::r_to_r_baseline_params$spawn_success_redd_size)) |>
+           fallRunDSM::r_to_r_baseline_params$spawn_success_redd_size)) |>
     glimpse()
+
+  annual_adult_abundance <-  model_results_df |>
+    filter(performance_metric == "All Spawners") |>
+    group_by(model_year = year, scenario) |>
+    summarize(actual_total_spawners = sum(value, na.rm = T)) |>
+    ungroup() |>
+    mutate(year = as.character(1979:1998)) |>
+    glimpse()
+
+  joined_spawn_capacity <- left_join(spawn_capacity, annual_adult_abundance) |>
+    transmute(year = as.numeric(year),
+              scenario = scenario,
+              spawn_over_capacity = actual_total_spawners/spawner_capacity) |>
+    filter(!is.na(scenario)) |>
+    group_by(scenario) |>
+    summarize(avg_annual_spawn_over_capacity = mean(spawn_over_capacity, na.rm = T),
+              min_annual_spawn_over_capacity = min(spawn_over_capacity, na.rm = T),
+              max_annual_spawn_over_capacity = max(spawn_over_capacity, na.rm = T)) |> glimpse()
+
 }
 
 
@@ -432,5 +466,63 @@ produce_marine_nutrient_pm <- function(model_results_df, scenario_name){
 ### 7 ###
 # time to recovery -------------------------------------------------------------
 # TODO add this
+# "Notes from 5/30: Calculate for each year if CRR > 1, phos < 5, if min 20% in
+# each juv size class, and if adults are Age 4 >35%, Age 5+ >20% for each individual
+# population - if these are both true check for abundance > 500 (independent population).
+# Then by diversity groups check that all independent populations are fullfilling
+# above criteria. (state when we meet recovery objectives within each diversity group)
+# SAT meeting check on logic for natural and hatchery adults return proportions"
+#
+#' Calculate Time to Recovery for Two Diversity Groups
+#'
+#' This function calculates the time to recovery for two diversity groups based on the provided model results dataframe and selected run.
+#'
+#' @param model_results_df The model results dataframe.
+#' @param selected_run The selected run.
+#'
+#' @return The time to recovery for two diversity groups, or a message indicating that no two diversity groups showed recovery throughout the simulation.
+#' @export
+#'
+#' @examples
+#' model_results <- data.frame(
+#'   performance_metric = c("Natural Spawners", "Growth Rate Natural Spawners", "PHOS", "CRR: Total Adult to Returning Natural Adult"),
+#'   value = c(100, 1.5, 0.03, 0.8),
+#'   location = c("Location A", "Location B", "Location C", "Location D"),
+#'   year = c(2021, 2022, 2023, 2024),
+#'   scenario = c("Scenario 1", "Scenario 2", "Scenario 1", "Scenario 2"),
+#'   run = c(1, 1, 2, 2)
+#' )
+#'
+#' produce_time_to_recovery_pm(model_results, 2)
+produce_time_to_recovery_pm <- function(model_results_df, selected_run) {
+  # diversity groups same for all runs
+  diversity_group <- tibble(location = fallRunDSM::watershed_labels,
+                            diversity_group = fallRunDSM::diversity_group)
+  ind_pops <- model_results_df |>
+    left_join(diversity_group) |>
+    filter(performance_metric %in% c("Natural Spawners", "Growth Rate Natural Spawners",
+                                     "PHOS", "CRR: Total Adult to Returning Natural Adult")) |>
+    pivot_wider(names_from = performance_metric, values_from = value) |>
+    mutate(above_500_spawners = if_else(`Natural Spawners` > 500, TRUE, FALSE),
+           phos_less_than_5_percent = ifelse(`PHOS` < .05, TRUE, FALSE),
+           growth_rate_above_1 = ifelse(`Growth Rate Natural Spawners` > 1, TRUE, FALSE),
+           crr_above_1 = ifelse(`CRR: Total Adult to Returning Natural Adult` > 1, TRUE, FALSE),
+           meet_req = ifelse(above_500_spawners & phos_less_than_5_percent & growth_rate_above_1 & crr_above_1 ,TRUE , FALSE)) |>
+    group_by(diversity_group, year, scenario, run) |>
+    summarise(diversity_group_meets_req = ifelse(all(meet_req) == TRUE, TRUE, FALSE)) |>
+    filter(diversity_group_meets_req == TRUE)
+
+  if (nrow(ind_pops) > 0){
+    years <- ind_pops |>
+      group_by(year) |>
+      summarise(num_dg_meeting_reqs = sum(diversity_group_meets_req)) |>
+      filter(num_dg_meeting_reqs > 2) |>
+      pull(year)
+    two_dg_recovered <- min(years)
+    return(two_dg_recovered)
+  } else return(print("No 2 diversity groups showed recovery throuout the simulation"))
+}
+
+
 
 

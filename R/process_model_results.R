@@ -56,11 +56,12 @@ create_model_results_dataframe <- function(model_results, scenario_name, chinook
     mutate(nat_spawners_lead = lead(`Natural Spawners`, 3),
            "CRR: Juvenile to Natural Adult" =  nat_spawners_lead / `Juveniles`,
            "CRR: Total Adult to Returning Natural Adult" = nat_spawners_lead / `All Spawners`,
-           "Growth Rate Natural Spawners" = (`Natural Spawners` - lag(`Natural Spawners`, 1) ) / lag(`Natural Spawners`, 1)
+           "Growth Rate Natural Spawners" = (`Natural Spawners` - lag(`Natural Spawners`, 1) ) / lag(`Natural Spawners`, 1),
+           "Independent Population" = ifelse(`Natural Spawners` > 500 & `PHOS` < .05 & `Growth Rate Natural Spawners` > 1 & `CRR: Total Adult to Returning Natural Adult` > 1, TRUE, FALSE)
     ) |>
     ungroup() |>
     select(-nat_spawners_lead) |>
-    pivot_longer(cols = 5:11, names_to = "performance_metric", values_to = "value") |> glimpse()
+    pivot_longer(cols = 5:12, names_to = "performance_metric", values_to = "value") |> glimpse()
 
   # add juv and adult df
   adults_age <- model_results$returning_adults |>
@@ -70,14 +71,14 @@ create_model_results_dataframe <- function(model_results, scenario_name, chinook
            location = watershed,
            origin = origin,
            year = return_sim_year,
-           age = return_sim_year - sim_year,
+           size_or_age = return_sim_year - sim_year,
            run = chinook_run) |> glimpse()
 
   juveniles <- model_results$juveniles_at_chipps |>
     as_tibble() |>
     mutate(year = as.numeric(year)) |>
     rename(location = watershed) |>
-    group_by(year, month, location, size) |>
+    group_by(year, month, location, size_or_age = size) |>
     summarise(value = sum(juveniles_at_chipps, na.rm = TRUE)) |>
     mutate(performance_metric = "Juveniles Size at Ocean Entry",
            scenario = scenario_name,
