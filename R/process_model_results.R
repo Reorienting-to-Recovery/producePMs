@@ -54,6 +54,7 @@ create_model_results_dataframe <- function(model_results, scenario_name, chinook
     arrange(location, year) |>
     group_by(location) |>
     mutate(nat_spawners_lead = lead(`Natural Spawners`, 3),
+           PHOS = ifelse(PHOS == 1, NA, PHOS),
            "CRR: Juvenile to Natural Adult" =  nat_spawners_lead / `Juveniles`,
            "CRR: Total Adult to Returning Natural Adult" = nat_spawners_lead / `All Spawners`,
            "Growth Rate Natural Spawners" = (`Natural Spawners` - lag(`Natural Spawners`, 1) ) / lag(`Natural Spawners`, 1),
