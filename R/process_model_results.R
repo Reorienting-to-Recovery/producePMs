@@ -10,7 +10,7 @@ library(tidyverse)
 #'                                                      seeds = baseline_seeds)
 #' process_model_results(baseline_model_results, "Baseline")
 #' @export
-create_model_results_dataframe <- function(model_results, model_parameters, scenario_name, chinook_run) {
+create_model_results_dataframe <- function(model_results, model_parameters, scenario_name, selected_run) {
   nat_spawn <- dplyr::as_tibble(model_results$spawners * model_results$proportion_natural_at_spawning) |>
     dplyr::mutate(location = fallRunDSM::watershed_labels) |>
     pivot_longer(cols = c(`1`:`20`), values_to = "value", names_to = "year") |>
@@ -47,7 +47,7 @@ create_model_results_dataframe <- function(model_results, model_parameters, scen
     summarise(value = sum(juveniles)) |>
     mutate(preformance_metric = "Juveniles") |> glimpse()
 
-  names_spawning_watersheds <- switch(chinook_run,
+  names_spawning_watersheds <- switch(selected_run,
                                        "fall" = names(which(ifelse(fallRunDSM::adult_seeds[, 1] == 0, FALSE, TRUE))),
                                        "spring" = names(which(ifelse(springRunDSM::adult_seeds[, 1] == 0, FALSE, TRUE))),
                                        "winter" = names(which(ifelse(winterRunDSM::adult_seeds[, 1] == 0, FALSE, TRUE))))
@@ -99,7 +99,7 @@ create_model_results_dataframe <- function(model_results, model_parameters, scen
 
   result_dataframe <- bind_rows(nat_spawn, all_spawn, juveniles, phos) |>
     mutate(scenario = scenario_name,
-           run = chinook_run) |>
+           run = selected_run) |>
     pivot_wider(values_from = value, names_from = preformance_metric) |>
     left_join(spawn_capacity) |>
     arrange(location, year) |>
@@ -129,7 +129,7 @@ create_model_results_dataframe <- function(model_results, model_parameters, scen
            origin = origin,
            year = return_sim_year,
            size_or_age = as.character(return_sim_year - sim_year),
-           run = chinook_run) |> glimpse()
+           run = selected_run) |> glimpse()
 
   juveniles <- model_results$juveniles_at_chipps |>
     as_tibble() |>
@@ -139,7 +139,7 @@ create_model_results_dataframe <- function(model_results, model_parameters, scen
     summarise(value = sum(juveniles_at_chipps, na.rm = TRUE)) |>
     mutate(performance_metric = "Juveniles Size at Ocean Entry",
            scenario = scenario_name,
-           run = chinook_run) |> glimpse()
+           run = selected_run) |> glimpse()
 
   full_results <- bind_rows(result_dataframe, adults_age, juveniles)
 
