@@ -209,7 +209,8 @@ create_model_inputs_tidy_df <- function(model_parameters, scenario_name, selecte
      ungroup() |>
      mutate(scenario = scenario_name,
             run = selected_run,
-            performance_metric = "Flood Frequecy and Stage: Monthly Flow Differencial")
+            performance_metric = "Flood Frequecy and Stage: Monthly Flow Differencial",
+            year = as.character(year))
 
 
 
@@ -218,3 +219,4 @@ create_model_inputs_tidy_df <- function(model_parameters, scenario_name, selecte
  return(prepped_inputs)
 
 }
+
