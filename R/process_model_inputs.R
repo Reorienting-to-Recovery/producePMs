@@ -140,13 +140,13 @@ create_model_inputs_tidy_df <- function(model_parameters, scenario_name, selecte
        select(watershed, date) |>
        rename(flow_cfs = watershed)
 
-     dur_30 <-  data |>
+     dur_30 <- data |>
        mutate(water_year = ifelse(lubridate::month(date) %in% 10:12, lubridate::year(date) + 1, lubridate::year(date))) |>
        group_by(water_year) |>
        mutate(roll_mean = zoo::rollapply(flow_cfs, FUN = min,
                                          width = lubridate::month(date), fill = NA, align = "left")) |>
        summarise(stat_in_duration = mean(roll_mean, na.rm = TRUE)) |>
-       ungroup()
+       ungroup() |>
        mutate(dist = round(cume_dist(-stat_in_duration), 3)) |>
        arrange(dist)
 
