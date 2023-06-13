@@ -6,6 +6,23 @@ library(tidyverse)
 # habitat values by day in month, sum across all months, take annual average) report mean and range of values
 #
 # # Describe in docs Only spawning habitat is considered, not holding.
+#
+#' Calculate Juvenile Wetted Acre-Day
+#'
+#' Calculate the juvenile wetted acre-day based on model parameters, scenario, and selected run.
+#'
+#' @param model_parameters A list containing the model parameters.
+#' @param scenario The scenario name for which the juvenile wetted acre-day is calculated.
+#' @param selected_run The selected run for which the juvenile wetted acre-day is calculated.
+#'
+#' @return A data frame containing the juvenile wetted acre-day.
+#'
+#' @examples
+#' model_params <- fallRunDSM::r_to_r_baseline_params
+#' juv_hab <- produce_juvenile_wetted_acre_day_pm(model_params, "Baseline", "fall")
+#' print(juv_hab)
+#'
+#' @export
 
 produce_juvenile_wetted_acre_day_pm <- function(model_parameters, scenario, selected_run){
   rearing_months <- switch(selected_run,
@@ -54,6 +71,23 @@ produce_juvenile_wetted_acre_day_pm <- function(model_parameters, scenario, sele
 # # TODO just do spawning for now - check on what our holding habitat actually is and maybe capture holding wetted acre days seperatly
 #
 # Describe in docs Only spawning habitat is considered, not holding.
+#
+#' Calculate Spawning Wetted Acre-Day
+#'
+#' Calculate the spawning wetted acre-day based on model parameters, scenario, and selected run.
+#'
+#' @param model_parameters A list containing the model parameters.
+#' @param scenario The scenario name for which the spawning wetted acre-day is calculated.
+#' @param selected_run The selected run for which the spawning wetted acre-day is calculated.
+#'
+#' @return A data frame containing the spawning wetted acre-day.
+#'
+#' @examples
+#' model_params <- fallRunDSM::r_to_r_baseline_params
+#' spawn_hab <- produce_spawning_wetted_acre_day_pm(model_params, "Baseline", "fall")
+#' print(spawn_hab)
+#'
+#' @export
 produce_spawning_wetted_acre_day_pm <- function(model_parameters, scenario, selected_run){
   spawning_months <- switch(selected_run,
                             "fall" = c(10:12),
@@ -86,6 +120,21 @@ produce_spawning_wetted_acre_day_pm <- function(model_parameters, scenario, sele
 # Spawning habitat decay rate (as a proxy for riverine condition) --------------
 # convert this to habitat loss. yearly loss in capacity relative to the maximum
 # over the 20 year period - sum over 20 year period
+#' Calculate Total Habitat Decay
+#'
+#' Calculate the total habitat decay based on model parameters and scenario.
+#'
+#' @param model_parameters A list containing the model parameters.
+#' @param scenario The scenario name for which the total habitat decay is calculated.
+#'
+#' @return A data frame containing the total habitat decay.
+#'
+#' @examples
+#' model_params <- fallRunDSM::r_to_r_baseline_params
+#' total_decay <- total_habitat_decay(model_params, "Baseline")
+#' print(total_decay)
+#'
+#' @export
 total_habitat_decay <- function(model_parameters, scenario){
   habitats <- list(
     spawning_habitat = model_params$spawning_habitat,
@@ -121,7 +170,22 @@ total_habitat_decay <- function(model_parameters, scenario){
 
 ### 9.1 & 9.3
 # Wetted acre days - total days floodplain activation occurs -------------------
-
+#' Produce Wetted Acre-Day Floodplain Activation Performance Metrics
+#'
+#' Calculate the wetted acre-day floodplain activation above 2 - year 30 day flood performance metrics based on model parameters and scenario.
+#'
+#' @param model_parameters A data frame containing the model parameters.
+#' @param scenario The scenario name for which the wetted acre-day floodplain activation metrics are calculated.
+#' @param selected_run The selected run for which the wetted acre-day floodplain activation metrics are calculated.
+#'
+#' @return A data frame containing the wetted acre-day floodplain activation metrics.
+#'
+#' @examples
+#' model_params <- read.csv("model_parameters.csv")
+#' floodplain_activation <- produce_wetted_acre_day_floodplain_activation_pm(model_params, "Scenario1", "Fall")
+#' print(floodplain_activation)
+#'
+#' @export
 produce_wetted_acre_day_floodplain_activation_pm <- function(model_parameters, scenario, selected_run){
     flow_data <- switch(scenario,
                         "Baseline" = DSMflow::flows_cfs$biop_itp_2018_2019,
