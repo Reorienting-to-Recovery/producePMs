@@ -124,7 +124,7 @@ create_model_results_dataframe <- function(model_results, model_parameters, scen
     ) |>
     ungroup() |>
     select(-nat_spawners_lead, -area_sqmt, -spawner_capacity) |>
-    pivot_longer(cols = 5:15, names_to = "performance_metric", values_to = "value") |> glimpse()
+    pivot_longer(cols = 5:16, names_to = "performance_metric", values_to = "value") |> glimpse()
 
   # add juv and adult df
   adults_age <- model_results$returning_adults |>

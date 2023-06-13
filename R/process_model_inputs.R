@@ -65,7 +65,7 @@ create_model_inputs_tidy_df <- function(model_parameters, scenario_name, selecte
     ungroup() |>
     mutate(scenario = scenario_name,
            run = selected_run,
-           performance_metric = "Annual Wetted Acre Days")
+           performance_metric = "8.1 & 8.2 Annual Wetted Acre Days")
 
  # Habitat Decay --------------------------------------------------------------
    habitats <- list(
@@ -122,7 +122,7 @@ create_model_inputs_tidy_df <- function(model_parameters, scenario_name, selecte
      ungroup() |>
      mutate(scenario = scenario_name,
             run = selected_run,
-            performance_metric = "Habitat Decay Acres")
+            performance_metric = "8.3 Habitat Decay Acres")
 
    # floodplain above threshold ------------------------------------------------
    flow_data <- switch(scenario_name,
@@ -134,6 +134,7 @@ create_model_inputs_tidy_df <- function(model_parameters, scenario_name, selecte
                        "Max Flow" = DSMflow::flows_cfs$run_of_river) |> # TODO update
      mutate("Lower-mid Sacramento River" = 35.6/58 * `Lower-mid Sacramento River1` + 22.4/58 * `Lower-mid Sacramento River2`) |>
      select(-`Lower-mid Sacramento River1`, -`Lower-mid Sacramento River2`)
+
    create_threshold_df <- function(watershed) {
      data <- flow_data |>
        filter(date >= lubridate::as_date("1979-01-01")) |>
@@ -188,7 +189,7 @@ create_model_inputs_tidy_df <- function(model_parameters, scenario_name, selecte
      ungroup() |>
      mutate(scenario = scenario_name,
             run = selected_run,
-            performance_metric = "Flooded Acre Days Above 2 year Exceedance")
+            performance_metric = "9.1 & 9.3 Flooded Acre Days Above 2 year Exceedance")
 
    # flow frequency and stage
    generate_lag_flows <- function(selected_watershed) {
@@ -209,12 +210,25 @@ create_model_inputs_tidy_df <- function(model_parameters, scenario_name, selecte
      ungroup() |>
      mutate(scenario = scenario_name,
             run = selected_run,
-            performance_metric = "Flood Frequecy and Stage: Monthly Flow Differencial",
+            performance_metric = "17 Flood Frequecy and Stage: Monthly Flow Differencial",
             year = as.character(year))
 
+   # weeks flooded 15
+   weeks_flooded <- model_parameters$weeks_flooded |>
+     as_tibble() |>
+     mutate(location = fallRunDSM::watershed_labels,
+            habitat_type = "flood") |>
+     pivot_longer(cols = -c(location, habitat_type), names_to = "year_date", values_to = "weeks_flooded") |>
+     separate(year_date, into = c("month", "year")) |>
+     mutate(scenario = scenario_name,
+            run = selected_run,) |>
+     group_by(scenario, run, location, year) |>
+     summarize(value = sum(weeks_flooded, na.rm = TRUE)) |>
+     ungroup() |>
+     mutate(performance_metric = "15 Total Weeks Flooded Annually") |>
+     glimpse()
 
-
-   prepped_inputs <- bind_rows(all_wetted_acre_days, all_decay, floodplain_habitat, max_yearly_flow_diff_table)
+   prepped_inputs <- bind_rows(all_wetted_acre_days, all_decay, floodplain_habitat, max_yearly_flow_diff_table, weeks_flooded)
 
  return(prepped_inputs)
 
