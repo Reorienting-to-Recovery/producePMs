@@ -109,22 +109,22 @@ create_model_results_dataframe <- function(model_results, model_parameters, scen
     arrange(location, year) |>
     group_by(location) |>
     mutate(nat_spawners_lead = lead(`Natural Spawners`, 3),
-           PHOS = ifelse(PHOS == 1, NA, PHOS),
+           PHOS = ifelse(`4 PHOS` == 1, NA, `4 PHOS`),
            "CRR: Juvenile to Natural Adult" =  nat_spawners_lead / `Juveniles`,
-           "2.1 CRR: Total Adult to Returning Natural Adult" = nat_spawners_lead / `All Spawners`,
+           "2.1 CRR: Total Adult to Returning Natural Adult" = nat_spawners_lead / `1 All Spawners`,
            "2.2 Growth Rate Natural Spawners" = (`Natural Spawners` - lag(`Natural Spawners`, 1) ) / lag(`Natural Spawners`, 1),
-           "3.1 & 3.2 Independent Population" = ifelse(`Natural Spawners` > 500 & `PHOS` < .05 & `Growth Rate Natural Spawners` > 1 & `CRR: Total Adult to Returning Natural Adult` > 1, TRUE, FALSE),
-           "3.3 Dependent Populations" = ifelse(location %in% names_spawning_watersheds & !`Independent Population`, TRUE, FALSE),
+           "3.1 & 3.2 Independent Population" = ifelse(`1 All Spawners` > 500 & `4 PHOS` < .05 & `2.2 Growth Rate Natural Spawners` > 1 & `2.1 CRR: Total Adult to Returning Natural Adult` > 1, TRUE, FALSE),
+           "3.3 Dependent Populations" = ifelse(location %in% names_spawning_watersheds & !`3.1 & 3.2 Independent Population`, TRUE, FALSE),
            area_sqmt = ifelse(scenario == "Max Habitat",
                                max_hab_total_area_sqmt, sit_total_area_sqmt),
-           "6 Marine Derived Nutrient (pounds per sq meter)" = (`All Spawners` * 21) / area_sqmt,
-           "5.4 Carrying Capacity vs Abundance" = `All Spawners` / spawner_capacity,
-           "12 Harvest: Adults above biological objective numbers" = `All Spawners` - 500,
+           "6 Marine Derived Nutrient (pounds per sq meter)" = (`1 All Spawners` * 21) / area_sqmt,
+           "5.4 Carrying Capacity vs Abundance" = `1 All Spawners` / spawner_capacity,
+           "12 Harvest: Adults above biological objective numbers" = `1 All Spawners` - 500,
 
-    ) |> glimpse()
+    ) |>
     ungroup() |>
     select(-nat_spawners_lead, -area_sqmt, -spawner_capacity) |>
-    pivot_longer(cols = 5:16, names_to = "performance_metric", values_to = "value") |> glimpse()
+    pivot_longer(cols = 5:17, names_to = "performance_metric", values_to = "value") |> glimpse()
 
   # add juv and adult df
   adults_age <- model_results$returning_adults |>
