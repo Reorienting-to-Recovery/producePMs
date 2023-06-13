@@ -64,3 +64,23 @@ plot_line_bar <- function(model_results_df, selected_scenario, selected_run,
     labs(x = "Year",
          y = selected_performance_metric)
 }
+
+# Line Plot -
+plot_dot_plot <- function(model_results_df, selected_scenario, selected_run,
+                          selected_performance_metric,
+                          shiny_version = FALSE){
+  if (shiny_version == FALSE){
+     model_results_df <- model_results_df |>
+      filter(scenario == selected_scenario,
+             run == selected_run,
+             performance_metric == selected_preformance_metric)
+  }
+  model_results_df |>
+    ggplot(aes(x = year, y = value, color = location)) +
+    geom_jitter(width = 0.005, height = 0.005) +
+    theme_minimal() +
+    scale_color_manual(values = colors_full) +
+    scale_y_continuous(labels = scales::comma) +
+    labs(x = "Year",
+         y = selected_performance_metric)
+}

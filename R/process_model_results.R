@@ -1,15 +1,19 @@
-library(tidyverse)
-#' Create model results dataframe
+#' Create Model Results Dataframe
 #'
-#' @param model_results A model output from the Recovery life cycle models (fall, spring, winter or late fall)
-#' @param scenario_name The name of the scenario that produced the model results.
-#' @return A dataframe containing the following columns(location, year, scenario, performance_metric, value)
-#' @examples
-#' baseline_seeds <- fallRunDSM::fall_run_model(mode = "seed", ..params = fallRunDSM::r_to_r_baseline_params)
-#' baseline_model_results <- fallRunDSM::fall_run_model(mode = "simulate", ..params = fallRunDSM::r_to_r_baseline_params,
-#'                                                      seeds = baseline_seeds)
-#' process_model_results(baseline_model_results, "Baseline")
+#' This function takes model results and parameters, along with scenario information, and creates a dataframe containing performance metrics for different locations and years.
+#'
+#' @param model_results The model results object containing the necessary data.
+#' @param model_parameters The model parameters object containing the necessary data.
+#' @param scenario_name The name of the scenario.
+#' @param selected_run The selected chinook run.
+#'
+#' @return A dataframe containing performance metrics for different locations and years.
 #' @export
+#' @examples
+#' create_model_results_dataframe(model_results, model_parameters, "Scenario 1", "fall")
+create_model_results_dataframe <- function(model_results, model_parameters, scenario_name, selected_run) {
+  # function body here
+}
 create_model_results_dataframe <- function(model_results, model_parameters, scenario_name, selected_run) {
   nat_spawn <- dplyr::as_tibble(model_results$spawners * model_results$proportion_natural_at_spawning) |>
     dplyr::mutate(location = fallRunDSM::watershed_labels) |>
@@ -114,7 +118,9 @@ create_model_results_dataframe <- function(model_results, model_parameters, scen
            area_sqmt = ifelse(scenario == "Max Habitat",
                                max_hab_total_area_sqmt, sit_total_area_sqmt),
            "Marine Derived Nutrient (pounds per sq meter)" = (`All Spawners` * 21) / area_sqmt,
-           "Carrying Capacity vs Abundance" = `All Spawners` / spawner_capacity
+           "Carrying Capacity vs Abundance" = `All Spawners` / spawner_capacity,
+           "Harvest: Adults above biological objective numbers" = `All Spawners` - 500,
+
     ) |>
     ungroup() |>
     select(-nat_spawners_lead, -area_sqmt, -spawner_capacity) |>

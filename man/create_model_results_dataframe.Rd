@@ -2,24 +2,30 @@
 % Please edit documentation in R/process_model_results.R
 \name{create_model_results_dataframe}
 \alias{create_model_results_dataframe}
-\title{Create model results dataframe}
+\title{Create Model Results Dataframe}
 \usage{
-create_model_results_dataframe(model_results, scenario_name, chinook_run)
+create_model_results_dataframe(
+  model_results,
+  model_parameters,
+  scenario_name,
+  selected_run
+)
 }
 \arguments{
-\item{model_results}{A model output from the Recovery life cycle models (fall, spring, winter or late fall)}
+\item{model_results}{The model results object containing the necessary data.}
 
-\item{scenario_name}{The name of the scenario that produced the model results.}
+\item{model_parameters}{The model parameters object containing the necessary data.}
+
+\item{scenario_name}{The name of the scenario.}
+
+\item{selected_run}{The selected chinook run.}
 }
 \value{
-A dataframe containing the following columns(location, year, scenario, performance_metric, value)
+A dataframe containing performance metrics for different locations and years.
 }
 \description{
-Create model results dataframe
+This function takes model results and parameters, along with scenario information, and creates a dataframe containing performance metrics for different locations and years.
 }
 \examples{
-baseline_seeds <- fallRunDSM::fall_run_model(mode = "seed", ..params = fallRunDSM::r_to_r_baseline_params)
-baseline_model_results <- fallRunDSM::fall_run_model(mode = "simulate", ..params = fallRunDSM::r_to_r_baseline_params,
-                                                     seeds = baseline_seeds)
-process_model_results(baseline_model_results, "Baseline")
+create_model_results_dataframe(model_results, model_parameters, "Scenario 1", "fall")
 }

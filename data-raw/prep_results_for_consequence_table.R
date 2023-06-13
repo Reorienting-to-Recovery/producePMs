@@ -2,7 +2,7 @@ library(tidyverse)
 library(producePMs)
 source("data-raw/run_model_scenarios.R")
 # For now just running baseline through - could map through all and reduce(bind_rows())
-model_results <- create_model_results_dataframe(baseline_model_results, "Baseline Scenario", "fall")
+model_results <- create_model_results_dataframe(baseline_model_results, model_parameters = fallRunDSM::r_to_r_baseline_params, "Baseline Scenario", selected_run = "fall")
 model_params <- fallRunDSM::r_to_r_baseline_params
 ### Biological Objectives ### --------------------------------------------------
 # 1 #
