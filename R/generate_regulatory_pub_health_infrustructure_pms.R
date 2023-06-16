@@ -60,17 +60,86 @@ produce_flood_frequency_and_stage_pm <- function(model_params, scenario, selecte
 }
 ### 18 ###
 # Hydropower generation ability ------------------------------------------------
-# TODO use these power mods to determine total cost associated with storage in each scenario
-# need storage values to finish this calculation
-lost_gen <- tibble(volume_af = c(49000,44000,42000,74000,
-                                 23000,7000,10000,120000,137000,
-                                 21000,18000,12000,70000,83000),
-                   lost_gen = c(106656,91038,99412,165255,
-                                48634,16578,22076,250968,316259,
-                                42377,37589,24761,150909,193031))
-ggplot(lost_gen, aes(x = volume_af, y = lost_gen)) +
-  geom_point()
+prepare_hydropower_pm <- function(){
+map_nodes_to_storage_facilities <- tibble(storage_facilities = c("Wiskeytown Lake",
+                                                                 "Shasta Lake",
+                                                                 "Keswich Reservoir",
+                                                                 'Thermalito Complex',
+                                                                 "Lake Oroville",
+                                                                 "Stony Gorge",
+                                                                 "Engilbright",
+                                                                 "Folsom",
+                                                                 "New Hogan",
+                                                                 "New Melones",
+                                                                 "New Don Padro",
+                                                                 "Lake McClure",
+                                                                 "Friant"),
+                                          nodes = c("S3", "S4", "S5", "S7", "S6",
+                                                    "S41", "S37", "S8", "S92", "S10",
+                                                    "S81", "S20", "S18"))
 
-power_mod <- lm(lost_gen ~ volume_af, data = lost_gen)
-summary(power_mod)
-predict(power_mod, tibble(volume_af = 5000))
+storage_nodes <- map_nodes_to_storage_facilities$nodes
+
+  pick_columns <- function(file, nodes) {
+    col_nm <- readxl::read_excel(file, skip = 1) %>% names()
+    temp <- readxl::read_excel(file, skip = 7, col_names = col_nm)
+    desired_nodes <- col_nm %in% nodes
+    filter <- temp |>
+      rename(date = `...2`) |>
+      select(date, col_nm[desired_nodes]) |>
+      mutate(date = as.Date(date)) |>
+      filter(year(date) <= 2003)
+    cleaned <- temp |>
+      rename(date = `...2`) |>
+      select(date, col_nm[desired_nodes]) |>
+      filter(year(date) > 2003) |>
+      mutate(date = as.Date(date)-lubridate::years(100)) |>
+      bind_rows(filter) |>
+      filter(year(date) >= 1979, year(date) <= 2000)
+    return(cleaned)
+  }
+  run_of_river_storage_data <- pick_columns("data-raw/run_of_river_storage.xlsx", storage_nodes) |>
+    pivot_longer(-date, names_to = "nodes", values_to = "TAF") |>
+    left_join(map_nodes_to_storage_facilities) |>
+    mutate(scenario = "Max Flow") |> glimpse()
+  baseline_storage_data <- pick_columns("data-raw/baseline_storage.xlsx", storage_nodes) |>
+    pivot_longer(-date, names_to = "nodes", values_to = "TAF") |>
+    left_join(map_nodes_to_storage_facilities) |>
+    mutate(scenario = "Baseline") |> glimpse()
+
+  all_storage <- bind_rows(run_of_river_storage_data, baseline_storage_data) |>
+    mutate(af = TAF * 1000) |>
+    group_by(storage_facilities, year = lubridate::year(date), scenario, nodes) |>
+    summarize(volume_af = sum(af)) |>
+    ungroup() |>
+    glimpse()
+
+  # convert to power gen
+  lost_gen <- tibble(volume_af = c(49000,44000,42000,74000,
+                                   23000,7000,10000,120000,137000,
+                                   21000,18000,12000,70000,83000),
+                     lost_gen = c(106656,91038,99412,165255,
+                                  48634,16578,22076,250968,316259,
+                                  42377,37589,24761,150909,193031))
+  ggplot(lost_gen, aes(x = volume_af, y = lost_gen)) +
+    geom_point()
+
+  power_mod <- lm(lost_gen ~ volume_af, data = lost_gen)
+  summary(power_mod)
+  power_gen_potential <- predict(power_mod, all_storage)
+
+  all_storage$power_gen_potential <- ifelse(power_gen_potential < 0, 0, power_gen_potential)
+
+  diff_in_power_production <- all_storage  |>
+    select(-volume_af) |>
+    pivot_wider(names_from = scenario, values_from = power_gen_potential) |>
+    mutate(`Difference in Potential Power Produnction From Baseline` =  `Max Flow` - Baseline) |>
+    group_by(year) |>
+    summarize(`Annual Difference in Potential Power Produnction From Baseline` = sum(`Difference in Potential Power Produnction From Baseline`, na.rm = TRUE)) |>
+    ungroup() |>
+    mutate(scenario = "Summarized diffs for Max Flow Scenrios") |>
+    group_by(scenario) |>
+    summarise(`Average Annual Difference in Potential Power Produnction From Baseline` = mean(`Annual Difference in Potential Power Produnction From Baseline`),
+              `Min Difference in Potential Power Produnction From Baseline` = min(`Annual Difference in Potential Power Produnction From Baseline`),
+              `Max Difference in Potential Power Produnction From Baseline` = max(`Annual Difference in Potential Power Produnction From Baseline`)) |> glimpse()
+}

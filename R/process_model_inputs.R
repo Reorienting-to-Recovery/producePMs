@@ -57,7 +57,7 @@ create_model_inputs_tidy_df <- function(model_parameters, scenario_name, selecte
     pivot_longer(cols = -c(watershed, habitat_type), names_to = "year_date", values_to = "habitat_quantity") |>
     separate(year_date, into = c("month", "year"))
 
- all_wetted_acre_days <- bind_rows(spawn_hab, ic_habitat_fry, ic_habitat_juv, floodplain_habitat) |>
+   all_wetted_acre_days <- bind_rows(spawn_hab, ic_habitat_fry, ic_habitat_juv, floodplain_habitat) |>
     mutate(habitat_quantity = DSMhabitat::square_meters_to_acres(habitat_quantity),
            wetted_acre_day = habitat_quantity * 30) |> # assume 30 days in month
     group_by(year, location = watershed, habitat_type) |>
@@ -130,8 +130,9 @@ create_model_inputs_tidy_df <- function(model_parameters, scenario_name, selecte
                        "Theoretical Max Habitat" = DSMflow::flows_cfs$biop_itp_2018_2019,
                        "No Harvest" = DSMflow::flows_cfs$biop_itp_2018_2019,
                        "No Hatchery" = DSMflow::flows_cfs$biop_itp_2018_2019,
-                       "Max Flow and Habitat" = DSMflow::flows_cfs$biop_itp_2018_2019,
-                       "Max Flow" = DSMflow::flows_cfs$run_of_river) |> # TODO update
+                       "Max Flow & Max Habitat" = DSMflow::flows_cfs$biop_itp_2018_2019,
+                       "Max Flow" = DSMflow::flows_cfs$run_of_river,
+                       "Max Hatchery" = DSMflow::flows_cfs$biop_itp_2018_2019) |> # TODO update
      mutate("Lower-mid Sacramento River" = 35.6/58 * `Lower-mid Sacramento River1` + 22.4/58 * `Lower-mid Sacramento River2`) |>
      select(-`Lower-mid Sacramento River1`, -`Lower-mid Sacramento River2`)
 
@@ -234,3 +235,212 @@ create_model_inputs_tidy_df <- function(model_parameters, scenario_name, selecte
 
 }
 
+#' Create CalSim non-CVPIA nodes tidy data
+#'
+#' This function retrieves and processes data related to hydropower generation, water deliveries for agriculture, municipal and industrial (M&I) use,
+#' and refuge water supply and delivery from CalSim non-CVPIA nodes. The function performs data transformation and returns a tidy data frame
+#' containing the processed data for further analysis.
+#'
+#' @return A tidy data frame with columns: year, location, value, scenario, run, and performance_metric.
+#'
+#' @examples
+#' create_calsim_non_cvpia_nodes_tidy()
+#'
+#' @export
+create_calsim_non_cvpia_nodes_tidy <- function(){
+  #hydropower gen
+  # want cols: year, location, value, scenario, run = NA (same for all), performance_metric
+  map_nodes_to_storage_facilities <- tibble(storage_facilities = c("Wiskeytown Lake",
+                                                                   "Shasta Lake",
+                                                                   "Keswich Reservoir",
+                                                                   'Thermalito Complex',
+                                                                   "Lake Oroville",
+                                                                   "Stony Gorge",
+                                                                   "Engilbright",
+                                                                   "Folsom",
+                                                                   "New Hogan",
+                                                                   "New Melones",
+                                                                   "New Don Padro",
+                                                                   "Lake McClure",
+                                                                   "Friant"),
+                                            nodes = c("S3", "S4", "S5", "S7", "S6",
+                                                      "S41", "S37", "S8", "S92", "S10",
+                                                      "S81", "S20", "S18"))
+
+  storage_nodes <- map_nodes_to_storage_facilities$nodes
+
+  pick_columns <- function(file, nodes) {
+    col_nm <- readxl::read_excel(file, skip = 1) %>% names()
+    temp <- readxl::read_excel(file, skip = 7, col_names = col_nm)
+    desired_nodes <- col_nm %in% nodes
+    filter <- temp |>
+      rename(date = `...2`) |>
+      select(date, col_nm[desired_nodes]) |>
+      mutate(date = as.Date(date)) |>
+      filter(year(date) <= 2003)
+    cleaned <- temp |>
+      rename(date = `...2`) |>
+      select(date, col_nm[desired_nodes]) |>
+      filter(year(date) > 2003) |>
+      mutate(date = as.Date(date)-lubridate::years(100)) |>
+      bind_rows(filter) |>
+      filter(year(date) >= 1979, year(date) <= 2000)
+    return(cleaned)
+  }
+  run_of_river_storage_data <- pick_columns("data-raw/run_of_river_storage.xlsx", storage_nodes) |>
+    pivot_longer(-date, names_to = "nodes", values_to = "TAF") |>
+    left_join(map_nodes_to_storage_facilities) |>
+    mutate(scenario = "Max Flow") |> glimpse()
+  baseline_storage_data <- pick_columns("data-raw/baseline_storage.xlsx", storage_nodes) |>
+    pivot_longer(-date, names_to = "nodes", values_to = "TAF") |>
+    left_join(map_nodes_to_storage_facilities) |>
+    mutate(scenario = "Baseline") |> glimpse()
+
+  all_storage <- bind_rows(run_of_river_storage_data, baseline_storage_data) |>
+    mutate(af = TAF * 1000) |>
+    group_by(storage_facilities, year = lubridate::year(date), scenario, nodes) |>
+    summarize(volume_af = sum(af)) |>
+    ungroup() |>
+    glimpse()
+
+  # convert to power gen
+  lost_gen <- tibble(volume_af = c(49000,44000,42000,74000,
+                                   23000,7000,10000,120000,137000,
+                                   21000,18000,12000,70000,83000),
+                     lost_gen = c(106656,91038,99412,165255,
+                                  48634,16578,22076,250968,316259,
+                                  42377,37589,24761,150909,193031))
+  # ggplot(lost_gen, aes(x = volume_af, y = lost_gen)) +
+  #   geom_point()
+
+  power_mod <- lm(lost_gen ~ volume_af, data = lost_gen)
+  # summary(power_mod)
+  power_gen_potential <- predict(power_mod, all_storage)
+
+  all_storage$power_gen_potential <- ifelse(power_gen_potential < 0, 0, power_gen_potential)
+
+  diff_in_power_production_max_flow <- all_storage  |>
+    select(-volume_af) |>
+    pivot_wider(names_from = scenario, values_from = power_gen_potential) |>
+    mutate(value =  `Max Flow` - Baseline,
+           performance_metric = "18 Hydropower Generation: Difference in Potential Power Produnction From Baseline",
+           scenario = "Max Flow",
+           location = storage_facilities,
+           run = NA) |>
+    select(-`Baseline`, -`Max Flow`, -storage_facilities, -nodes) |>
+    glimpse()
+
+  diff_in_power_production_max_flow_max_hab <- all_storage  |>
+    select(-volume_af) |>
+    pivot_wider(names_from = scenario, values_from = power_gen_potential) |>
+    mutate(value =  `Max Flow` - Baseline,
+           performance_metric = "18 Hydropower Generation: Difference in Potential Power Produnction From Baseline",
+           scenario = "Max Flow & Max Habitat",
+           location = storage_facilities,
+           run = NA) |>
+    select(-`Baseline`, -`Max Flow`, -storage_facilities, -nodes) |>
+    glimpse()
+
+  hydropower_pm <- bind_rows(diff_in_power_production_max_flow, diff_in_power_production_max_flow_max_hab)
+  #total deliveries agriculture
+  del_nodes <- tibble(location = c("North of Delta", "North of Delta", "North of Delta", "North of Delta",
+                                    "South of Delta", "South of Delta", "South of Delta", "South of Delta",
+                                    "North of Delta", "South of Delta", "North of Delta", "North of Delta",
+                                    "South of Delta", "South of Delta", "North of Delta", "South of Delta"),
+                      type = c("Ag", "M&I", "Refuge", "Ag", "Ag", "M&I", "Refuge", "Ag", "All", "All",
+                               "Ag", "M&I", "Ag", "M&I", "All", "All"),
+                      contract = c("CVP Project", "CVP Project", "CVP Project", "Settlement",
+                                   "CVP Project", "CVP Project", "CVP Project", "Exchange",
+                                   "All CVP", "All CVP", "SWP Project", "SWP Project", "SWP Project",
+                                   "SWP Project","All SWP", "All SWP"),
+                      nodes = c("DEL_CVP_PAG_N", "DEL_CVP_PMI_N", "DEL_CVP_PRF_N", "DEL_CVP_PSC_N",
+                                "DEL_CVP_PAG_S", "DEL_CVP_PMI_S", "DEL_CVP_PRF_S", "DEL_CVP_PEX_S",
+                                "DEL_CVP_TOTAL_N", "DEL_CVP_TOTAL_S", "DEL_SWP_PAG_N", "DEL_SWP_PMI_N",
+                                "DEL_SWP_PAG_S", "DEL_SWP_PMI_S", "DEL_SWP_TOT_N", "DEL_SWP_TOT_S"))
+  ag_del_nodes <- del_nodes |> filter(type == "Ag") |> pull(nodes)
+  run_of_river_delivery_data <- pick_columns("data-raw/run_of_river_deliveries.xlsx", ag_del_nodes) |>
+    pivot_longer(-date, names_to = "nodes", values_to = "TAF") |>
+    left_join(del_nodes) |>
+    mutate(scenario = "Max Flow") |> glimpse()
+  baseline_delivery_data <- pick_columns("data-raw/baseline_deliveries.xlsx", ag_del_nodes) |>
+    pivot_longer(-date, names_to = "nodes", values_to = "TAF") |>
+    left_join(del_nodes) |>
+    mutate(scenario = "Baseline") |> glimpse()
+
+  all_ag_deleveries <- bind_rows(run_of_river_delivery_data, baseline_delivery_data) |>
+    mutate(af = TAF * 1000) |>
+    group_by(location, year = lubridate::year(date), scenario) |>
+    summarize(volume_af = sum(af)) |>
+    ungroup() |>
+    transmute(year = year,
+              value = volume_af,
+              performance_metric = "13.1 Agricultural Water Supply and Delivery",
+              scenario = scenario,
+              location = location,
+              run = NA) |>
+    pivot_wider(names_from = scenario, values_from = value) |>
+    mutate("Max Flow & Max Habitat" = `Max Flow`) |>
+    pivot_longer(Baseline:`Max Flow & Max Habitat`, names_to = "scenario", values_to = "value") |>
+    glimpse()
+
+  #TODO see if we can add MOKE and Tulare in
+  #total deliveries mni
+  mni_del_nodes <- del_nodes |> filter(type == "M&I") |> pull(nodes)
+  run_of_river_delivery_data_m <- pick_columns("data-raw/run_of_river_deliveries.xlsx", mni_del_nodes) |>
+    pivot_longer(-date, names_to = "nodes", values_to = "TAF") |>
+    left_join(del_nodes) |>
+    mutate(scenario = "Max Flow") |> glimpse()
+  baseline_delivery_data_m <- pick_columns("data-raw/baseline_deliveries.xlsx", mni_del_nodes) |>
+    pivot_longer(-date, names_to = "nodes", values_to = "TAF") |>
+    left_join(del_nodes) |>
+    mutate(scenario = "Baseline") |> glimpse()
+
+  all_mandi_deleveries <- bind_rows(run_of_river_delivery_data_m, baseline_delivery_data_m) |>
+    mutate(af = TAF * 1000) |>
+    group_by(location, year = lubridate::year(date), scenario) |>
+    summarize(volume_af = sum(af)) |>
+    ungroup() |>
+    transmute(year = year,
+              value = volume_af,
+              performance_metric = "13.2 Municipal Water Supply and Delivery",
+              scenario = scenario,
+              location = location,
+              run = NA) |>
+    pivot_wider(names_from = scenario, values_from = value) |>
+    mutate("Max Flow & Max Habitat" = `Max Flow`) |>
+    pivot_longer(Baseline:`Max Flow & Max Habitat`, names_to = "scenario", values_to = "value") |>
+    glimpse()
+
+  #TODO see if we can add MOKE and Tulare in
+
+  #total deliveries refuges
+  refuge_del_nodes <- del_nodes |> filter(type == "Refuge") |> pull(nodes)
+  run_of_river_delivery_data_refuge <- pick_columns("data-raw/run_of_river_deliveries.xlsx", refuge_del_nodes) |>
+    pivot_longer(-date, names_to = "nodes", values_to = "TAF") |>
+    left_join(del_nodes) |>
+    mutate(scenario = "Max Flow") |> glimpse()
+  baseline_delivery_data_refuge <- pick_columns("data-raw/baseline_deliveries.xlsx", refuge_del_nodes) |>
+    pivot_longer(-date, names_to = "nodes", values_to = "TAF") |>
+    left_join(del_nodes) |>
+    mutate(scenario = "Baseline") |> glimpse()
+
+  all_refuge_deleveries <- bind_rows(run_of_river_delivery_data_refuge, baseline_delivery_data_refuge) |>
+    mutate(af = TAF * 1000) |>
+    group_by(location, year = lubridate::year(date), scenario) |>
+    summarize(volume_af = sum(af)) |>
+    ungroup() |>
+    transmute(year = year,
+              value = volume_af,
+              performance_metric = "11 Managed Wetlands: Refuge Water Supply and Delivery",
+              scenario = scenario,
+              location = location,
+              run = NA) |>
+    pivot_wider(names_from = scenario, values_from = value) |>
+    mutate("Max Flow & Max Habitat" = `Max Flow`) |>
+    pivot_longer(Baseline:`Max Flow & Max Habitat`, names_to = "scenario", values_to = "value") |>
+    glimpse()
+
+  # bind together and return
+  all_calsim_pms <- bind_rows(hydropower_pm, all_ag_deleveries, all_mandi_deleveries, all_refuge_deleveries)
+  return(all_calsim_pms)
+}
