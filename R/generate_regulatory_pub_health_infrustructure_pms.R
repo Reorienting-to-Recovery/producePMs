@@ -27,7 +27,43 @@ produce_weeks_flooded_pm <- function(model_parameters, scenario, selected_run){
 ### 16.2 ###
 # Proportion Unimparied --------------------------------------------------------
 #TODO do not know how we would classify baseline unimparied
+## Calculated as proportion total annual volume on the Sacramento, Yuba, Tuolumne. Summarized as average unimpaired flow over 20 years and all locations.
+produce_proportion_unimpaired_flow <- function(model_params, scenario, selected_run){
+  if (scenario %in% c("Max Flow", "Max Flow & Max Habitat")) {
+    print("Assuming 100% unimpaired flows for Run of River")
+  } else {
+  run_of_river_flows <- DSMflow::flows_cfs$run_of_river |>
+    mutate("Lower-mid Sacramento River" = 35.6/58 * `Lower-mid Sacramento River1` + 22.4/58 * `Lower-mid Sacramento River2`) |>
+    select(-`Lower-mid Sacramento River1`, -`Lower-mid Sacramento River2`) |>
+    filter(year(date) > 1979 & year(date) < 2000) |>
+    # filter(month(date) > 3 & month(date) <= 9) |>
+    pivot_longer(cols = -date, names_to = "watershed", values_to = "flow_cfs") |>
+    # filter(watershed %in% c("Yuba River", "Upper Sacramento River", "American River")) |>
+    mutate(monthly_acre_feet = flow_cfs * 59.5) |>
+    group_by(year = year(date), watershed) |>
+    summarize(total_acre_feet_run_of_river = sum(monthly_acre_feet, na.rm = TRUE)) |>
+    glimpse()
 
+  other_flows <- DSMflow::flows_cfs$biop_itp_2018_2019 |>
+    mutate("Lower-mid Sacramento River" = 35.6/58 * `Lower-mid Sacramento River1` + 22.4/58 * `Lower-mid Sacramento River2`) |>
+    select(-`Lower-mid Sacramento River1`, -`Lower-mid Sacramento River2`) |>
+    filter(year(date) > 1979 & year(date) < 2000) |>
+    # filter(month(date) > 3 & month(date) <= 9) |>
+    pivot_longer(cols = -date, names_to = "watershed", values_to = "flow_cfs") |>
+    # filter(watershed %in% c("Yuba River", "Upper Sacramento River", "American River")) |>
+    mutate(monthly_acre_feet = flow_cfs * 59.5) |>
+    group_by(year = year(date), watershed) |>
+    summarize(total_acre_feet_biop = sum(monthly_acre_feet, na.rm = TRUE)) |>
+    glimpse()
+
+  produce_unimpaired <- left_join(run_of_river_flows, other_flows) |>
+    mutate(prop_unimpaired = total_acre_feet_biop/total_acre_feet_run_of_river) |>
+    # filter(watershed == "Lower Sacramento River") |> glimpse()
+    summarize(avg_prop_unimpaired = mean(prop_unimpaired)) |>
+    glimpse()
+
+  }
+}
 
 ### 17 ###
 # Flood frequency and stage for each watershed ---------------------------------
@@ -36,7 +72,12 @@ produce_weeks_flooded_pm <- function(model_parameters, scenario, selected_run){
 produce_flood_frequency_and_stage_pm <- function(model_params, scenario, selected_run){
   flow_data <- switch(scenario,
                       "Baseline" = DSMflow::flows_cfs$biop_itp_2018_2019,
-                      "Max Flow" = DSMflow::flows_cfs$biop_itp_2018_2019) |> # TODO update
+                        "Theoretical Max Habitat" = DSMflow::flows_cfs$biop_itp_2018_2019,
+                        "No Harvest" = DSMflow::flows_cfs$biop_itp_2018_2019,
+                        "No Hatchery" = DSMflow::flows_cfs$biop_itp_2018_2019,
+                        "Max Flow" = DSMflow::flows_cfs$run_of_river,
+                        "Max Flow & Max Habitat" = DSMflow::flows_cfs$run_of_river,
+                        "Max Hatchery" = DSMflow::flows_cfs$biop_itp_2018_2019) |> # TODO update
     mutate("Lower-mid Sacramento River" = 35.6/58 * `Lower-mid Sacramento River1` + 22.4/58 * `Lower-mid Sacramento River2`) |>
     select(-`Lower-mid Sacramento River1`, -`Lower-mid Sacramento River2`)
   generate_lag_flows <- function(selected_watershed) {

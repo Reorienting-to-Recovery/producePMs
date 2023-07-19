@@ -4,7 +4,10 @@
 \alias{produce_percent_harvestable_abv_threshold_pm}
 \title{Produce Percent Harvestable Above Threshold Performance Metrics}
 \usage{
-produce_percent_harvestable_abv_threshold_pm(model_results_df, scenario)
+produce_percent_harvestable_abv_threshold_pm(
+  model_results_df,
+  selected_scenario
+)
 }
 \arguments{
 \item{model_results_df}{A data frame containing the model results.}

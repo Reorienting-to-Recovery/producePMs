@@ -4,12 +4,12 @@
 \alias{total_habitat_decay}
 \title{Calculate Total Habitat Decay}
 \usage{
-total_habitat_decay(model_parameters, scenario)
+total_habitat_decay(model_params, scenario)
 }
 \arguments{
-\item{model_parameters}{A list containing the model parameters.}
-
 \item{scenario}{The scenario name for which the total habitat decay is calculated.}
+
+\item{model_parameters}{A list containing the model parameters.}
 }
 \value{
 A data frame containing the total habitat decay.

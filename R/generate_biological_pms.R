@@ -22,7 +22,7 @@ library(tidyverse)
 #' @export
 produce_spawner_abundance_pm <- function(model_results_df){
   annual_spawners <- model_results_df |>
-    filter(performance_metric == "All Spawners") |>
+    filter(performance_metric == "1 All Spawners") |>
     group_by(year, scenario) |>
     summarize(total_spawners = sum(value, na.rm = T)) |>
     ungroup() |>
@@ -51,15 +51,48 @@ produce_spawner_abundance_pm <- function(model_results_df){
 #' @export
 produce_crr_pm <- function(model_results_df){
   crr <- model_results_df |>
-    filter(performance_metric == "CRR: Total Adult to Returning Natural Adult") |>
-    group_by(year, scenario) |>
-    summarize(average_crr = mean(value, na.rm = T)) |>
+    filter(performance_metric == "2.1 CRR: Total Adult to Returning Natural Adult") |>
+    group_by(location, scenario) |>
+    summarize(average_crr = mean(value, na.rm = TRUE)) |>
     ungroup() |>
+    mutate(average_crr = ifelse(average_crr == Inf, 0, average_crr)) |>
     group_by(scenario) |>
     summarize(avg_annual_crr = mean(average_crr, na.rm = T),
               min_annual_crr = min(average_crr, na.rm = T),
               max_annual_crr = max(average_crr, na.rm = T))
   return(crr)
+}
+
+produce_crr_geometric_mean_pm <- function(model_results_df){
+  geom_mean_calc <- function(watershed, scenario) {
+    data <- model_results_df |>
+      filter(performance_metric == "2.1 CRR: Total Adult to Returning Natural Adult",
+             location == watershed) |>
+      select(year, location, scenario, run, performance_metric, value) |>
+      mutate(geometric_mean = zoo::rollapply(value, 3, psych::geometric.mean, fill = NA)) |>
+      filter(!is.na(geometric_mean))
+    return(data)
+  }
+  watersheds <- rep(fallRunDSM::watershed_labels, 7)
+  scenarios_lists <- c(rep("Baseline", 31),
+                       rep("Theoretical Max Habitat", 31),
+                       rep("No Harvest", 31),
+                       rep("No Hatchery", 31),
+                       rep("Max Flow", 31),
+                       rep("Max Flow & Max Habitat", 31),
+                       rep("Max Hatchery", 31))
+
+  res <- purrr::map2(watersheds,scenarios_lists, geom_mean_calc) |> reduce(bind_rows)
+  goem_mean_crr <- res |>
+    group_by(location, scenario) |>
+    summarize(average_crr = mean(geometric_mean, na.rm = TRUE)) |>
+    ungroup() |>
+    mutate(average_crr = ifelse(average_crr == Inf, 0, average_crr)) |>
+    group_by(scenario) |>
+    summarize(avg_annual_crr = mean(average_crr, na.rm = T),
+              min_annual_crr = min(average_crr, na.rm = T),
+              max_annual_crr = max(average_crr, na.rm = T))
+ return(goem_mean_crr)
 }
 
 ### 2.2 ###
@@ -81,14 +114,16 @@ produce_crr_pm <- function(model_results_df){
 #' @export
 produce_growth_rate_pm <- function(model_results_df){
   growth_rates <- model_results_df |>
-    filter(performance_metric == "Growth Rate Natural Spawners") |>
+    filter(performance_metric == "2.2 Growth Rate Spawners") |>
     group_by(year, scenario) |>
-    summarize(average_crr = mean(value, na.rm = T)) |>
+    summarize(average_growth_rate = mean(value, na.rm = T)) |>
     ungroup() |>
+      mutate(average_growth_rate = ifelse(average_growth_rate == Inf, 0, average_growth_rate)) |>
+
     group_by(scenario) |>
-    summarize(avg_annual_crr = mean(average_crr, na.rm = T),
-              min_annual_crr = min(average_crr, na.rm = T),
-              max_annual_crr = max(average_crr, na.rm = T))
+    summarize(avg_annual_growth_rate = mean(average_growth_rate, na.rm = T),
+              min_annual_growth_rate = min(average_growth_rate, na.rm = T),
+              max_annual_growth_rate = max(average_growth_rate, na.rm = T))
   return(growth_rates)
 }
 
@@ -114,17 +149,53 @@ produce_growth_rate_pm <- function(model_results_df){
 #'
 #' @export
 produce_independent_pops_pm <- function(model_results_df) {
+  potential_dependent_pops <- c("Bear River", "Big Chico Creek", "Elder River", "Paynes Creek",  "Stoney Creek", "Thomes Creek")
   ind_pops <- model_results_df |>
-    filter(performance_metric %in% c("Natural Spawners", "Growth Rate Natural Spawners", "PHOS")) |>
+    filter(performance_metric %in% c("Natural Spawners", "2.2 Growth Rate Spawners",
+                                     "4 PHOS", "2.1 CRR: Total Adult to Returning Natural Adult"),
+           !location %in% potential_dependent_pops) |>
     pivot_wider(names_from = performance_metric, values_from = value) |>
     mutate(above_500_spawners = if_else(`Natural Spawners` > 500, TRUE, FALSE),
-           phos_less_than_5_percent = ifelse(`PHOS` < .05, TRUE, FALSE),
-           growth_rate_above_1 = ifelse(`Growth Rate Natural Spawners` > 1, TRUE, FALSE),
-           independent_population = ifelse(above_500_spawners & phos_less_than_5_percent & growth_rate_above_1, TRUE, FALSE)) |>
+           phos_less_than_5_percent = ifelse(`4 PHOS` < .05, TRUE, FALSE),
+           crr_above_1 = ifelse(`2.1 CRR: Total Adult to Returning Natural Adult` >= 1, TRUE, FALSE),
+           growth_rate_above_1 = ifelse(`2.2 Growth Rate Spawners` > 0, TRUE, FALSE),
+           independent_population = ifelse(above_500_spawners & phos_less_than_5_percent & growth_rate_above_1 & crr_above_1, TRUE, FALSE)) |>
     group_by(scenario) |>
-    summarize(number_independent_populations = sum(independent_population))
+    summarize(number_independent_populations = sum(independent_population, na.rm = TRUE))
   return(ind_pops)
 }
+
+### 3.1.1 ###
+# Number of Independent populations ------------------------------------------------------
+# Just looks at if fish are present or not
+#'
+#' This function calculates if populations are present on a trib based on model results.
+#'
+#' @param model_results_df A data frame containing model results.
+#'
+#' @return A data frame with the calculated populations per scenario.
+#'
+#' @examples
+#' produce_populations_present_pm(model_results)
+#'
+#' @export
+#'
+# TODO check only for ind pops
+produce_populations_present_pm <- function(model_results_df) {
+  potential_dependent_pops <- c("Bear River", "Big Chico Creek", "Elder River", "Paynes Creek",  "Stoney Creek", "Thomes Creek")
+
+  pops <- model_results_df |>
+    filter(performance_metric %in% c("1 All Spawners"),
+           !location %in% potential_dependent_pops) |>
+    pivot_wider(names_from = performance_metric, values_from = value) |>
+    mutate(population = ifelse(`1 All Spawners` > 1, TRUE, FALSE)) |>
+    group_by(scenario, year) |>
+    summarize(yearly_pops = sum(population, na.rm = TRUE)) |>
+    group_by(scenario) |>
+    summarise(annual_avg_pops = mean(yearly_pops, na.rm = TRUE)) |> glimpse()
+  return(pops)
+}
+
 
 ### 3.2 ###
 # % of potential independent viable populations in each diversity group per ESU/run
@@ -144,19 +215,24 @@ produce_independent_pops_pm <- function(model_results_df) {
 #'
 #' @export
 produce_independent_pops_per_diversity_group_pm <- function(model_results_df, selected_run) {
+  potential_dependent_pops <- c("Bear River", "Big Chico Creek", "Elder River", "Paynes Creek",  "Stoney Creek", "Thomes Creek")
+
   # diversity groups same for all runs
   diversity_group <- tibble(location = fallRunDSM::watershed_labels,
                             diversity_group = fallRunDSM::diversity_group)
   ind_pops <- model_results_df |>
     left_join(diversity_group) |>
-    filter(performance_metric %in% c("Natural Spawners", "Growth Rate Natural Spawners", "PHOS")) |>
+    filter(performance_metric %in% c("Natural Spawners", "2.2 Growth Rate Spawners",
+                                     "4 PHOS", "2.1 CRR: Total Adult to Returning Natural Adult"),
+           !location %in% potential_dependent_pops) |>
     pivot_wider(names_from = performance_metric, values_from = value) |>
     mutate(above_500_spawners = if_else(`Natural Spawners` > 500, TRUE, FALSE),
-           phos_less_than_5_percent = ifelse(`PHOS` < .05, TRUE, FALSE),
-           growth_rate_above_1 = ifelse(`Growth Rate Natural Spawners` > 1, TRUE, FALSE),
-           independent_population = ifelse(above_500_spawners & phos_less_than_5_percent & growth_rate_above_1, TRUE, FALSE)) |>
+           phos_less_than_5_percent = ifelse(`4 PHOS` < .05, TRUE, FALSE),
+           crr_above_1 = ifelse(`2.1 CRR: Total Adult to Returning Natural Adult` >= 1, TRUE, FALSE),
+           growth_rate_above_1 = ifelse(`2.2 Growth Rate Spawners` > 0, TRUE, FALSE),
+           independent_population = ifelse(above_500_spawners & phos_less_than_5_percent & growth_rate_above_1 & crr_above_1, TRUE, FALSE)) |>
     group_by(scenario, diversity_group) |>
-    summarize(number_independent_populations = sum(independent_population))
+    summarize(number_independent_populations = sum(independent_population, na.rm = TRUE))
   return(ind_pops)
 }
 ### 3.2 ###
@@ -175,32 +251,23 @@ produce_independent_pops_per_diversity_group_pm <- function(model_results_df, se
 #'
 #' @examples
 #' produce_dependent_pops_per_diversity_group_pm(model_results, "fall")
-
+#' @export
 produce_dependent_pops_per_diversity_group_pm <- function(model_results_df, selected_run) {
   # diversity groups same for all runs
+
   diversity_group <- tibble(location = fallRunDSM::watershed_labels,
                             diversity_group = fallRunDSM::diversity_group)
   # adult pop exists not the same, use adult seeds to determine
-  adult_pop_exists <- switch(selected_run,
-                             "fall" = tibble(location = fallRunDSM::watershed_labels,
-                                             seeds = ifelse(fallRunDSM::adult_seeds[, 1] == 0, FALSE, TRUE)),
-                             "spring" = tibble(location = springRunDSM::watershed_labels,
-                                               seeds = ifelse(springRunDSM::adult_seeds[, 1] == 0, FALSE, TRUE)),
-                             "winter" = tibble(location = winterRunDSM::watershed_labels,
-                                               seeds = ifelse(winterRunDSM::adult_seeds[, 1] == 0, FALSE, TRUE)), )
-  ind_pops <- model_results_df |>
+  potential_dependent_pops <- c("Bear River", "Big Chico Creek", "Elder River", "Paynes Creek",  "Stoney Creek", "Thomes Creek")
+  dep_pops <- model_results_df |>
     left_join(diversity_group) |>
-    left_join(adult_pop_exists) |>
-    filter(performance_metric %in% c("Natural Spawners", "Growth Rate Natural Spawners", "PHOS")) |>
+    filter(location %in% potential_dependent_pops) |>
+    filter(performance_metric %in% c("1 All Spawners")) |>
     pivot_wider(names_from = performance_metric, values_from = value) |>
-    mutate(above_500_spawners = if_else(`Natural Spawners` > 500, TRUE, FALSE),
-           phos_less_than_5_percent = ifelse(`PHOS` < .05, TRUE, FALSE),
-           growth_rate_above_1 = ifelse(`Growth Rate Natural Spawners` > 1, TRUE, FALSE),
-           independent_population = ifelse(above_500_spawners & phos_less_than_5_percent & growth_rate_above_1, TRUE, FALSE),
-           dependent_population = ifelse(!independent_population & seeds, TRUE, FALSE)) |>
-    group_by(scenario, diversity_group) |>
-    summarize(number_dependent_populations = sum(dependent_population))
-  return(ind_pops)
+    mutate(dependent_population = ifelse(`1 All Spawners` >= 1, TRUE, FALSE)) |>
+    group_by(scenario) |>
+    summarize(number_dependent_populations = sum(dependent_population, na.rm = TRUE))
+  return(dep_pops)
 }
 
 ### 4 ###
@@ -222,14 +289,15 @@ produce_dependent_pops_per_diversity_group_pm <- function(model_results_df, sele
 #' @export
 produce_phos_pm <- function(model_results_df){
   phos <- model_results_df |>
-    filter(performance_metric == "PHOS") |>
+    filter(performance_metric %in% c("4 PHOS", "1 All Spawners")) |>
+    pivot_wider(names_from = performance_metric, values_from = value) |>
     group_by(year, scenario, run) |>
-    summarize(average_phos = mean(value, na.rm = T)) |>
+    summarize(weighted_average_phos = weighted.mean(`4 PHOS`, `1 All Spawners`, na.rm = T)) |>
     ungroup() |>
     group_by(scenario, run) |>
-    summarize(avg_annual_phos = mean(average_phos, na.rm = T),
-              min_annual_phos = min(average_phos, na.rm = T),
-              max_annual_phos = max(average_phos, na.rm = T))
+    summarize(avg_annual_phos = mean(weighted_average_phos, na.rm = T),
+              min_annual_phos = min(weighted_average_phos, na.rm = T),
+              max_annual_phos = max(weighted_average_phos, na.rm = T))
   return(phos)
 }
 
@@ -253,13 +321,13 @@ produce_phos_pm <- function(model_results_df){
 produce_categorical_return_age_pm <- function(model_results_df) {
   adults <- model_results_df |>
     filter(year > 5) |>
-    select(-size) |>
+    # select(-size_or_age) |>
     filter(performance_metric == "Adult Age of Return") |>
     select(-month) |>
-    group_by(year, location, age, scenario, run) |>
+    group_by(year, location, size_or_age, scenario, run) |>
     summarise(total_spawners = round(sum(value, na.rm = TRUE))) |>
     ungroup() |>
-    pivot_wider(names_from = age, values_from = total_spawners) |>
+    pivot_wider(names_from = size_or_age, values_from = total_spawners) |>
     mutate(total_spawners = round(`2` + `3` + `4` + `5`),
            perc_age_2 = round(`2`/total_spawners * 100),
            perc_age_3 = round(`3`/total_spawners * 100),
@@ -298,7 +366,7 @@ produce_shannon_div_ind_size_pm <- function(model_results_df){
 
   shannon_di <- model_results_df |>
     filter(performance_metric == "Juveniles Size at Ocean Entry") |>
-    group_by(year, size, scenario, run) |>
+    group_by(year, size_or_age, scenario, run) |>
     summarize(frequency = sum(value, na.rm = T)) |>
     ungroup() |>
     left_join(annual_total) |>
@@ -330,18 +398,19 @@ produce_shannon_div_ind_size_pm <- function(model_results_df){
 #' produce_shannon_div_ind_size_and_timing_pm(model_results)
 #'
 #' @export
+# TODO check in on the timing
 produce_shannon_div_ind_size_and_timing_pm <- function(model_results_df){
-  monthly_total <- model_results_df |>
+  annual_total <- model_results_df |>
     filter(performance_metric == "Juveniles Size at Ocean Entry") |>
-    group_by(year, scenario, month, run) |>
+    group_by(year, scenario, run) |>
     summarize(total_juveniles = sum(value, na.rm = T))
 
   shannon_di <- model_results_df |>
     filter(performance_metric == "Juveniles Size at Ocean Entry") |>
-    group_by(year, size, scenario, month, run) |>
+    group_by(year, size_or_age, scenario, month, run) |>
     summarize(frequency = sum(value, na.rm = T)) |>
     ungroup() |>
-    left_join(monthly_total) |>
+    left_join(annual_total) |>
     mutate(pi = frequency / total_juveniles,
            ln_pi = log(pi),
            pi_ln_pi = pi * ln_pi) |>
@@ -400,7 +469,7 @@ produce_carrying_capacity_vs_abundance <- function(model_results_df, model_param
     glimpse()
 
   annual_adult_abundance <-  model_results_df |>
-    filter(performance_metric == "All Spawners") |>
+    filter(performance_metric == "1 All Spawners") |>
     group_by(model_year = year, scenario) |>
     summarize(actual_total_spawners = sum(value, na.rm = T)) |>
     ungroup() |>
@@ -500,13 +569,13 @@ produce_time_to_recovery_pm <- function(model_results_df, selected_run) {
                             diversity_group = fallRunDSM::diversity_group)
   ind_pops <- model_results_df |>
     left_join(diversity_group) |>
-    filter(performance_metric %in% c("Natural Spawners", "Growth Rate Natural Spawners",
-                                     "PHOS", "CRR: Total Adult to Returning Natural Adult")) |>
+    filter(performance_metric %in% c("Natural Spawners", "2.2 Growth Rate Spawners",
+                                     "4 PHOS", "2.1 CRR: Total Adult to Returning Natural Adult")) |>
     pivot_wider(names_from = performance_metric, values_from = value) |>
     mutate(above_500_spawners = if_else(`Natural Spawners` > 500, TRUE, FALSE),
-           phos_less_than_5_percent = ifelse(`PHOS` < .05, TRUE, FALSE),
-           growth_rate_above_1 = ifelse(`Growth Rate Natural Spawners` > 1, TRUE, FALSE),
-           crr_above_1 = ifelse(`CRR: Total Adult to Returning Natural Adult` > 1, TRUE, FALSE),
+           phos_less_than_5_percent = ifelse(`4 PHOS` < .05, TRUE, FALSE),
+           growth_rate_above_1 = ifelse(`2.2 Growth Rate Spawners` > 0, TRUE, FALSE),
+           crr_above_1 = ifelse(`2.1 CRR: Total Adult to Returning Natural Adult` > 1, TRUE, FALSE),
            meet_req = ifelse(above_500_spawners & phos_less_than_5_percent & growth_rate_above_1 & crr_above_1 ,TRUE , FALSE)) |>
     group_by(diversity_group, year, scenario, run) |>
     summarise(diversity_group_meets_req = ifelse(all(meet_req) == TRUE, TRUE, FALSE)) |>

@@ -359,16 +359,16 @@ create_calsim_non_cvpia_nodes_tidy <- function(){
                                 "DEL_SWP_PAG_S", "DEL_SWP_PMI_S", "DEL_SWP_TOT_N", "DEL_SWP_TOT_S"))
   ag_del_nodes <- del_nodes |> filter(type == "Ag") |> pull(nodes)
   run_of_river_delivery_data <- pick_columns("data-raw/run_of_river_deliveries.xlsx", ag_del_nodes) |>
-    pivot_longer(-date, names_to = "nodes", values_to = "TAF") |>
+    pivot_longer(-date, names_to = "nodes", values_to = "CFS") |>
     left_join(del_nodes) |>
     mutate(scenario = "Max Flow") |> glimpse()
   baseline_delivery_data <- pick_columns("data-raw/baseline_deliveries.xlsx", ag_del_nodes) |>
-    pivot_longer(-date, names_to = "nodes", values_to = "TAF") |>
+    pivot_longer(-date, names_to = "nodes", values_to = "CFS") |>
     left_join(del_nodes) |>
     mutate(scenario = "Baseline") |> glimpse()
 
   all_ag_deleveries <- bind_rows(run_of_river_delivery_data, baseline_delivery_data) |>
-    mutate(af = TAF * 1000) |>
+    mutate(af = CFS * 59.5) |> # 1 cfs = 1.983 CFS in one day * 30 days = 59.5 ac in a month
     group_by(location, year = lubridate::year(date), scenario) |>
     summarize(volume_af = sum(af)) |>
     ungroup() |>
@@ -387,16 +387,16 @@ create_calsim_non_cvpia_nodes_tidy <- function(){
   #total deliveries mni
   mni_del_nodes <- del_nodes |> filter(type == "M&I") |> pull(nodes)
   run_of_river_delivery_data_m <- pick_columns("data-raw/run_of_river_deliveries.xlsx", mni_del_nodes) |>
-    pivot_longer(-date, names_to = "nodes", values_to = "TAF") |>
+    pivot_longer(-date, names_to = "nodes", values_to = "CFS") |>
     left_join(del_nodes) |>
     mutate(scenario = "Max Flow") |> glimpse()
   baseline_delivery_data_m <- pick_columns("data-raw/baseline_deliveries.xlsx", mni_del_nodes) |>
-    pivot_longer(-date, names_to = "nodes", values_to = "TAF") |>
+    pivot_longer(-date, names_to = "nodes", values_to = "CFS") |>
     left_join(del_nodes) |>
     mutate(scenario = "Baseline") |> glimpse()
 
   all_mandi_deleveries <- bind_rows(run_of_river_delivery_data_m, baseline_delivery_data_m) |>
-    mutate(af = TAF * 1000) |>
+    mutate(af = CFS * 59.5) |> # 1 cfs = 1.983 CFS in one day * 30 days = 59.5 ac in a month
     group_by(location, year = lubridate::year(date), scenario) |>
     summarize(volume_af = sum(af)) |>
     ungroup() |>
@@ -416,16 +416,16 @@ create_calsim_non_cvpia_nodes_tidy <- function(){
   #total deliveries refuges
   refuge_del_nodes <- del_nodes |> filter(type == "Refuge") |> pull(nodes)
   run_of_river_delivery_data_refuge <- pick_columns("data-raw/run_of_river_deliveries.xlsx", refuge_del_nodes) |>
-    pivot_longer(-date, names_to = "nodes", values_to = "TAF") |>
+    pivot_longer(-date, names_to = "nodes", values_to = "CFS") |>
     left_join(del_nodes) |>
     mutate(scenario = "Max Flow") |> glimpse()
   baseline_delivery_data_refuge <- pick_columns("data-raw/baseline_deliveries.xlsx", refuge_del_nodes) |>
-    pivot_longer(-date, names_to = "nodes", values_to = "TAF") |>
+    pivot_longer(-date, names_to = "nodes", values_to = "CFS") |>
     left_join(del_nodes) |>
     mutate(scenario = "Baseline") |> glimpse()
 
   all_refuge_deleveries <- bind_rows(run_of_river_delivery_data_refuge, baseline_delivery_data_refuge) |>
-    mutate(af = TAF * 1000) |>
+    mutate(af = CFS * 59.5) |> # 1 cfs = 1.983 CFS in one day * 30 days = 59.5 ac in a month
     group_by(location, year = lubridate::year(date), scenario) |>
     summarize(volume_af = sum(af)) |>
     ungroup() |>
@@ -440,7 +440,35 @@ create_calsim_non_cvpia_nodes_tidy <- function(){
     pivot_longer(Baseline:`Max Flow & Max Habitat`, names_to = "scenario", values_to = "value") |>
     glimpse()
 
+  # delta total outflow
+  delta_outflow_node <- c("C407")
+  run_of_river_delta_outflow <- pick_columns("data-raw/run_of_river_delta_outflow.xlsx", delta_outflow_node) |>
+    pivot_longer(-date, names_to = "nodes", values_to = "CFS") |>
+    left_join(del_nodes) |>
+    mutate(scenario = "Max Flow") |> glimpse()
+  baseline_delta_outflow <- pick_columns("data-raw/baseline_delta_outflow.xlsx", delta_outflow_node) |>
+    pivot_longer(-date, names_to = "nodes", values_to = "CFS") |>
+    left_join(del_nodes) |>
+    mutate(scenario = "Baseline") |> glimpse()
+
+  all_delta_outflows <- bind_rows(run_of_river_delta_outflow, baseline_delta_outflow) |>
+    mutate(cfs = CFS) |>
+    group_by(location, year = lubridate::year(date), scenario) |>
+    summarize(cfs = mean(cfs, na.rm = TRUE)) |>
+    ungroup() |>
+    transmute(year = year,
+              value = cfs,
+              performance_metric = "16.1 Delta Outflow (cfs)",
+              scenario = scenario,
+              location = location,
+              run = NA) |>
+    pivot_wider(names_from = scenario, values_from = value) |>
+    mutate("Max Flow & Max Habitat" = `Max Flow`) |>
+    pivot_longer(Baseline:`Max Flow & Max Habitat`, names_to = "scenario", values_to = "value") |>
+    glimpse()
+
   # bind together and return
-  all_calsim_pms <- bind_rows(hydropower_pm, all_ag_deleveries, all_mandi_deleveries, all_refuge_deleveries)
+  all_calsim_pms <- bind_rows(hydropower_pm, all_ag_deleveries, all_mandi_deleveries, all_refuge_deleveries, all_delta_outflows)
   return(all_calsim_pms)
 }
+

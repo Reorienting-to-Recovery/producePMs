@@ -3,12 +3,13 @@
 remotes::install_github("Reorienting-to-Recovery/fallRunDSM@phos-refactor", force = TRUE)
 library(fallRunDSM) # make sure R2R org
 # library(tidyverse)
-#
+
 # # remotes::install_github("Reorienting-to-Recovery/DSMhabitat")
 # remotes::install_github("Reorienting-to-Recovery/DSMhabitat")
 library(DSMhabitat)
 library(producePMs)
 library(tidyverse)
+
 # FALL BOOKEND RUNS ------------------------------------------------------------
 baseline_seeds <- fallRunDSM::fall_run_model(mode = "seed", ..params = fallRunDSM::r_to_r_baseline_params)
 baseline_model_results <- fallRunDSM::fall_run_model(mode = "simulate", ..params = fallRunDSM::r_to_r_baseline_params,
@@ -37,8 +38,7 @@ max_flow_max_hab_results <- fallRunDSM::fall_run_model(mode = "simulate", ..para
 max_hatchery_seeds <- fallRunDSM::fall_run_model(mode = "seed", ..params = fallRunDSM::r_to_r_max_hatchery_params)
 max_hatchery_results <- fallRunDSM::fall_run_model(mode = "simulate", ..params = fallRunDSM::r_to_r_max_hatchery_params,
                                                        seeds = max_hatchery_seeds)
-# TODO add max hatchery in
-# TODO add max flow & max habiatat in
+
 # sit_seeds <- fallRunDSM::fall_run_model(mode = "seed", ..params = fallRunDSM::params_2022[1:119])
 #
 # sit_model_results <- fallRunDSM::fall_run_model(mode = "simulate", ..params = fallRunDSM::params_2022[1:119],
@@ -74,13 +74,10 @@ fall_max_hatcheries <- create_model_results_dataframe(max_hatchery_results,
 all_res <- bind_rows(fall_baseline_results, fall_run_tmh_results, fall_run_no_harvest, fall_run_no_hatchery,
                      fall_max_flow, fall_max_flow_max_hab, fall_max_hatcheries)
 
-# TODO add max hatchery in
-# TODO add max flow & max habiatat in
-write_csv(all_res, "data-raw/shiny-materials/fall_model_results.csv")
+write_csv(all_res, "data-raw/shiny-materials/fall_model_results_7_19.csv")
 
 
 # PRocess inputs
-# TODO update to pull from produce pms package
 # library(producePMs)
 fall_baseline_inputs <- create_model_inputs_tidy_df(model_parameters = fallRunDSM::r_to_r_baseline_params,
                                                                  "Baseline", selected_run = "fall")
@@ -106,7 +103,5 @@ all_inputs <- bind_rows(fall_baseline_inputs, fall_run_tmh_inputs, fall_run_no_h
                      fall_max_hatchery,
                      calsim_inputs)
 
+write_csv(all_inputs, "data-raw/shiny-materials/fall_model_inputs_7_19.csv")
 
-# TODO add max hatchery in
-# TODO add max flow & max habiatat in
-write_csv(all_inputs, "data-raw/shiny-materials/fall_model_inputs.csv")
