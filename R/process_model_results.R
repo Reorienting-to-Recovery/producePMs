@@ -115,8 +115,8 @@ create_model_results_dataframe <- function(model_results, model_parameters, scen
            "3.3 Dependent Populations" = ifelse(location %in% c("Bear River", "Big Chico Creek", "Elder River", "Paynes Creek",  "Stoney Creek", "Thomes Creek") & `1 All Spawners` > 1, TRUE, FALSE),
            area_sqmt = ifelse(scenario == "Max Habitat",
                                max_hab_total_area_sqmt, sit_total_area_sqmt),
-           "6 Marine Derived Nutrient (pounds per sq meter)" = (`1 All Spawners` * 21) / area_sqmt,
-           "5.4 Carrying Capacity vs Abundance" = `1 All Spawners` / spawner_capacity,
+           "7.2 Marine Derived Nutrient (pounds per sq meter)" = (`1 All Spawners` * 21) / area_sqmt,
+           "7.1 Carrying Capacity vs Abundance" = `1 All Spawners` / spawner_capacity,
            "4 PHOS" = ifelse(`1 All Spawners` > 0, `4 PHOS`, NA)
     ) |>
     ungroup() |>
