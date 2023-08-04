@@ -1,6 +1,7 @@
 # make suure most recent R2R fall run DSM
 # remotes::install_github("Reorienting-to-Recovery/fallRunDSM", force = TRUE)
-remotes::install_github("Reorienting-to-Recovery/fallRunDSM@phos-refactor", force = TRUE)
+# Rerun next line if any updates are made to fallRunDSM
+# remotes::install_github("Reorienting-to-Recovery/fallRunDSM@phos-refactor", force = TRUE)
 library(fallRunDSM) # make sure R2R org
 # library(tidyverse)
 
@@ -74,7 +75,7 @@ fall_max_hatcheries <- create_model_results_dataframe(max_hatchery_results,
 all_res <- bind_rows(fall_baseline_results, fall_run_tmh_results, fall_run_no_harvest, fall_run_no_hatchery,
                      fall_max_flow, fall_max_flow_max_hab, fall_max_hatcheries)
 
-write_csv(all_res, "data-raw/shiny-materials/fall_model_results_7_19.csv")
+write_csv(all_res, "data-raw/shiny-materials/fall_model_results_7_27.csv")
 
 
 # PRocess inputs
@@ -103,5 +104,5 @@ all_inputs <- bind_rows(fall_baseline_inputs, fall_run_tmh_inputs, fall_run_no_h
                      fall_max_hatchery,
                      calsim_inputs)
 
-write_csv(all_inputs, "data-raw/shiny-materials/fall_model_inputs_7_19.csv")
+write_csv(all_inputs, "data-raw/shiny-materials/fall_model_inputs_7_27.csv")
 

@@ -92,32 +92,8 @@ create_model_inputs_tidy_df <- function(model_parameters, scenario_name, selecte
     pivot_longer(cols = -c(watershed, habitat_type), names_to = "year_date", values_to = "decay_acres") |>
     separate(year_date, into = c("month", "year"))
 
-   fp_rearing_decay <- DSMhabitat::square_meters_to_acres(decayed_habitat$floodplain_habitat -
-                                                                habitats$floodplain_habitat) |>
-     as_tibble() |>
-     mutate(watershed = fallRunDSM::watershed_labels,
-            habitat_type = "flood") |>
-     pivot_longer(cols = -c(watershed, habitat_type), names_to = "year_date", values_to = "decay_acres") |>
-     separate(year_date, into = c("month", "year"))
-
-   fry_rearing_decay <- DSMhabitat::square_meters_to_acres(decayed_habitat$inchannel_habitat_fry -
-                                                                 habitats$inchannel_habitat_fry) |>
-     as_tibble() |>
-     mutate(watershed = fallRunDSM::watershed_labels,
-            habitat_type = "fry rearing") |>
-     pivot_longer(cols = -c(watershed, habitat_type), names_to = "year_date", values_to = "decay_acres") |>
-     separate(year_date, into = c("month", "year"))
-
-   juv_rearing_decay <- DSMhabitat::square_meters_to_acres(decayed_habitat$inchannel_habitat_juv -
-                                                                 habitats$inchannel_habitat_juv) |>
-     as_tibble() |>
-     mutate(watershed = fallRunDSM::watershed_labels,
-            habitat_type = "juv rearing") |>
-     pivot_longer(cols = -c(watershed, habitat_type), names_to = "year_date", values_to = "decay_acres") |>
-     separate(year_date, into = c("month", "year"))
-
-   all_decay <- bind_rows(spawning_decay, fp_rearing_decay, fry_rearing_decay, juv_rearing_decay) |>
-     group_by(year, location = watershed, habitat_type) |>
+   all_decay <- spawning_decay |>
+     group_by(year, location = watershed) |>
      summarize(value = sum(decay_acres, na.rm = TRUE)) |>
      ungroup() |>
      mutate(scenario = scenario_name,

@@ -144,10 +144,10 @@ create_model_results_dataframe <- function(model_results, model_parameters, scen
               year = return_sim_year,
               size_or_age = as.character(return_sim_year - sim_year),
               run = selected_run) |>
-    filter(year > 5) |>
+    filter(year > 5, year <= 20 ) |>
     group_by(location, year, scenario) |>
     summarise(river_toals = sum(value, na.rm = TRUE),
-              nums_above_target = river_toals - 500) |>
+              nums_above_target = ifelse(river_toals - 500 < 0, 0, river_toals - 500)) |>
     transmute(performance_metric = "12 Harvest: Adults above biological objective numbers",
               scenario = scenario,
               value = nums_above_target,

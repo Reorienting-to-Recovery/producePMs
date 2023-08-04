@@ -114,12 +114,12 @@ produce_crr_geometric_mean_pm <- function(model_results_df){
 #' @export
 produce_growth_rate_pm <- function(model_results_df){
   growth_rates <- model_results_df |>
-    filter(performance_metric == "2.2 Growth Rate Spawners") |>
+    filter(performance_metric == "2.2 Growth Rate Spawners",
+           value != Inf,
+           !is.na(value)) |>
     group_by(year, scenario) |>
     summarize(average_growth_rate = mean(value, na.rm = T)) |>
     ungroup() |>
-      mutate(average_growth_rate = ifelse(average_growth_rate == Inf, 0, average_growth_rate)) |>
-
     group_by(scenario) |>
     summarize(avg_annual_growth_rate = mean(average_growth_rate, na.rm = T),
               min_annual_growth_rate = min(average_growth_rate, na.rm = T),

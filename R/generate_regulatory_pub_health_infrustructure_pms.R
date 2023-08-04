@@ -6,11 +6,12 @@ library(tidyverse)
 produce_weeks_flooded_pm <- function(model_parameters, scenario, selected_run){
   weeks_flooded <- model_parameters$weeks_flooded |>
     as_tibble() |>
-    pivot_longer(cols = everything(), names_to = "year_date", values_to = "weeks_flooded") |>
+    mutate(location = fallRunDSM::watershed_labels) |>
+    pivot_longer(-location, names_to = "year_date", values_to = "weeks_flooded") |>
     separate(year_date, into = c("month", "year")) |>
     mutate(scenario = scenario,
            run = selected_run) |>
-    group_by(scenario, run, year) |>
+    group_by(scenario, run, year, location) |>
     summarize(annual_weeks_flooded = sum(weeks_flooded, na.rm = TRUE)) |>
     ungroup() |>
     group_by(scenario, run) |>
