@@ -16,7 +16,9 @@ colors_full <-  c("#9A8822", "#F5CDB4",
                   "#D8B70A", "#EAD3BF", "#AA9486", "#B6854D", "#798E87", # Isle of dogs 2 altered slightly
                   "gray", "lightblue4"
 )
-
+colors_small <-  c("#9A8822", "#F5CDB4", "#F8AFA8", "#FDDDA0", "#74A089", #Royal 2
+                   "#899DA4", "#C93312", "#DC863B" # royal 1 (- 3)
+)
 scenario_six_colors <- c("#02401B", "#9A8822", "#798E87", "#5B1A18","#972D15", "#DC863B", "#AA9486")
 
 muted = c("Critical" = "#972D15",
@@ -90,8 +92,9 @@ flow_data <-bind_rows(flow_data_biop, flow_data_ror)
 year_lookup <- tibble(year = 1:21,
                       actual_year = 1980:2000)
 flow_spawn_plot_data <- all_res |>
-  filter(performance_metric == "1 All Spawners",
-         location == "Upper Sacramento River") |>
+  filter(performance_metric == "1 All Spawners") |>
+  group_by(year, scenario, run) |>
+  summarize(value = sum(value, na.rm = TRUE)) |>
   left_join(year_lookup) |>
   mutate(date = as.Date(paste0(actual_year, "-12-31"))) |>
   filter(scenario != "No Hatchery") |> glimpse()
@@ -110,11 +113,12 @@ ggplot() +
   geom_line(data = flow_spawn_plot_data |> filter(scenario == "Baseline"), aes(x = date, y = value), color = "black", linewidth = .5, alpha = 1) +
   scale_y_continuous(labels = scales::comma) +
   labs(title = "Historical Water Year Types, and Total Spawner Abundance",
-       y = "FSpawner Abundance",
+       y = "Spawner Abundance",
        x = "Year",
        linetype = "Bookend Scenario",
-       fill = "Hydrology",
-       caption = "Note: These numbers only reflect Upper Sacramento River Fall Run Chinook Spawners. Baseline and No Hatchery perform very simmilarly in the Upper Sacramento River.") +
+       fill = "Hydrology"
+       # caption = "Note: These numbers only reflect Upper Sacramento River Fall Run Chinook Spawners. Baseline and No Hatchery perform very simmilarly in the Upper Sacramento River."
+       ) +
   theme_minimal() +
   theme(
     plot.caption = element_text(hjust = 0, face = "italic"),# move caption to the left
@@ -148,6 +152,36 @@ ggplot() +
   theme(
     plot.caption = element_text(hjust = 0, face = "italic"),# move caption to the left
     # legend.position = c(0.85, 0.7),
+    # legend.position = "none",
+    axis.text = element_text(size = 15),
+    axis.title = element_text(size = 20),
+    plot.title = element_text(size = 20)
+  )
+
+# just abundance
+ggplot() +
+  # geom_area(data = flow_data, aes(x = date, y = flow_cfs, fill = Hydrology), alpha = .5, position = "identity") +
+  # geom_col(data = flow_data, aes(x = date, y = -4000, fill = year_type), alpha = 1, width = 31) +
+  # scale_fill_manual(values = muted,
+                    # limits = c("Run of River", "Biop (Baseline)")
+                    #  limits = c('Critical', 'Dry', 'Below Normal', 'Above Normal', 'Wet')
+  # ) +
+  # geom_line(data = flow_data, aes(x = date, y = flow_cfs), color = "black", linewidth = .1) +
+  geom_line(data = flow_spawn_plot_data, aes(x = date, y = value, color = scenario),linewidth = .5, alpha = 1) +
+  scale_color_manual(values = scenario_six_colors) +
+  # geom_line(data = flow_spawn_plot_data |> filter(scenario == "Baseline"), aes(x = date, y = value), color = "black", linewidth = .5, alpha = 1) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Total Spawner Abundance over Time",
+       y = "Spawner Abundance",
+       x = "Year",
+       color = "Bookend Scenario",
+       fill = "Hydrology",
+      #  caption = "Note: These numbers only reflect Upper Sacramento River Fall Run Chinook Spawners. Baseline and No Hatchery perform very simmilarly in the Upper Sacramento River."
+       ) +
+  theme_minimal() +
+  theme(
+    plot.caption = element_text(hjust = 0, face = "italic"),# move caption to the left
+    legend.position = c(0.85, 0.7),
     # legend.position = "none",
     axis.text = element_text(size = 15),
     axis.title = element_text(size = 20),
@@ -195,6 +229,10 @@ diversity_groups <- fallRunDSM::diversity_group
 fish_present_data <- all_res |>
   filter(performance_metric == "1 All Spawners",
          scenario != "Theoretical Max Habitat") |>
+  mutate(scenario = case_when(scenario == "Max Flow" ~ "Run of River",
+                              scenario == "Max Flow & Max Habitat" ~ "Run of River & Max Habitat",
+                              scenario == "Theoretical Max Habitat" ~ "Max Habitat",
+                              T ~ scenario)) |>
   mutate(`Spawners Present` = ifelse(value > 1, 1, NA),
          scenario = ifelse(scenario == "No Harvest", "Max Habitat, No Harvest", scenario),
          diversity_group = as.factor(diversity_group[location]),
@@ -208,7 +246,7 @@ fish_present <- fish_present_data |>
   ggplot(aes(x = year, y = `Spawners Present`, fill = diversity_group)) +
   geom_col() +
   theme_minimal() +
-  scale_fill_manual(values = colors_full
+  scale_fill_manual(values = colors_small
                     # name = diversity_group,
                     # labels = c(paste(names(which(diversity_group == 1)), collapse = ", "),
                     #             paste(names(which(diversity_group == 2)), collapse = ", "),
@@ -263,7 +301,11 @@ plot_data |>
 # Max Hab - PHOS ---
 phos_plot_data <- all_res |>
   filter(performance_metric %in% c("4 PHOS", "1 All Spawners"),
-         scenario %in% c("Baseline", "Theoretical Max Habitat", "Max Flow")
+         scenario %in% c("Baseline",
+                         "Theoretical Max Habitat",
+                         # "Max Flow",
+                         "No Hatchery",
+                         "Max Hatchery")
          # location %in% c("Clear Creek", "Yuba River", "Feather River", "American River")
   )  |>
   pivot_wider(names_from = performance_metric, values_from = value) |>
@@ -288,7 +330,7 @@ phos_plot_data |>
   theme(
     plot.caption = element_text(hjust = 0, face = "italic"),# move caption to the left
     # legend.position = c(0.85, 0.7),
-    legend.position = "none",
+    # legend.position = "none",
     axis.text = element_text(size = 15),
     axis.title = element_text(size = 20),
     plot.title = element_text(size = 20)
@@ -473,3 +515,13 @@ produce_habitat_ratios(r_to_r_baseline_params, "Upper Sacramento River", "Baseli
 produce_habitat_ratios(r_to_r_tmh_params, "Upper Sacramento River", "Max Habitat")
 
 
+# Survival step function
+
+steps <- tibble("Flow (cms)" = c(0, 122, 122, 303, 303, 1000),
+                "Migratory Survival" = c(.03, .03, .189, .189,.508, .508 ))
+ggplot(steps, aes(x = `Flow (cms)`, y = `Migratory Survival`)) +
+  # geom_point() +
+  geom_line(color = "#7294D4", size = 1.5) +
+  theme_minimal() +
+  labs(title = "Upper Sacramento River Migratory Survival Curves") +
+  theme(text = element_text(size = 15))
