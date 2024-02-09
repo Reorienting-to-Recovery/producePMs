@@ -108,7 +108,8 @@ create_model_inputs_tidy_df <- function(model_parameters, scenario_name, selecte
                        "No Hatchery" = DSMflow::flows_cfs$biop_itp_2018_2019,
                        "Max Flow & Max Habitat" = DSMflow::flows_cfs$run_of_river,
                        "Max Flow" = DSMflow::flows_cfs$run_of_river,
-                       "Max Hatchery" = DSMflow::flows_cfs$biop_itp_2018_2019) |> # TODO update
+                       "Max Hatchery" = DSMflow::flows_cfs$biop_itp_2018_2019,
+                       "Kitchen Sink" = DSMflow::flows_cfs$eff_sac) |> # TODO update
      mutate("Lower-mid Sacramento River" = 35.6/58 * `Lower-mid Sacramento River1` + 22.4/58 * `Lower-mid Sacramento River2`) |>
      select(-`Lower-mid Sacramento River1`, -`Lower-mid Sacramento River2`)
 

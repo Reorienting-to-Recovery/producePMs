@@ -444,47 +444,38 @@ produce_shannon_div_ind_size_and_timing_pm <- function(model_results_df){
 #' model_parameters <- list(spawning_habitat = data.frame(location = c("Location A", "Location B"), year_date = "Jan-2021", value = 300))
 #'
 #' produce_carrying_capacity_vs_abundance(model_results, model_parameters, "fall")
-produce_carrying_capacity_vs_abundance <- function(model_results_df, model_parameters, selected_run){
-  spawning_months <- switch(selected_run,
-                            "fall" = c(10:12),
-                            "spring" = c(7:10),
-                            "winter" = c(5:7),
-                            "late fall" = c(10:12, 1:2))
+produce_floodplain_over_inchannel_habitat <- function(model_results_df, model_parameters, selected_run){
+  rearing_months <- switch(selected_run,
+                           "fall" = c(1:8),
+                           "spring" = c(1:5),
+                           "winter" = c(1:5),
+                           "late fall" = c(4:11))
   month_lookup <- tibble(month_num = c(1:12), month = month.abb)
-  spawn_capacity <- model_parameters$spawning_habitat |>
+  inchannel_habitat <- model_parameters$inchannel_habitat_fry |>
     as_tibble() |>
     mutate(location = fallRunDSM::watershed_labels) |>
-    pivot_longer(cols = -location, names_to = "year_date", values_to = "spawning_habitat") |>
+    pivot_longer(cols = -location, names_to = "year_date", values_to = "inchannel_habitat") |>
     separate(year_date, into = c("month", "year")) |>
     left_join(month_lookup) |>
-    filter(month_num  %in% spawning_months) |>
-    group_by(year, month) |> # can add location in here too if we want
-    summarise(total_monthly_spawning_habitat = sum(spawning_habitat, na.rm = TRUE)) |>
-    ungroup() |>
-    group_by(year) |>
-    summarise(average_monthly_annual_spawning_habitat = mean(total_monthly_spawning_habitat, na.rm = TRUE)) |>
-    ungroup() |>
-    mutate(spawner_capacity = round(average_monthly_annual_spawning_habitat/
-           fallRunDSM::r_to_r_baseline_params$spawn_success_redd_size)) |>
-    glimpse()
+    filter(month_num  %in% rearing_months) |> glimpse()
 
-  annual_adult_abundance <-  model_results_df |>
-    filter(performance_metric == "1 All Spawners") |>
-    group_by(model_year = year, scenario) |>
-    summarize(actual_total_spawners = sum(value, na.rm = T)) |>
-    ungroup() |>
-    mutate(year = as.character(1979:1998)) |>
-    glimpse()
+  floodplain_habitat <- model_parameters$floodplain_habitat |>
+    as_tibble() |>
+    mutate(location = fallRunDSM::watershed_labels) |>
+    pivot_longer(cols = -location, names_to = "year_date", values_to = "floodplain_habitat") |>
+    separate(year_date, into = c("month", "year")) |>
+    left_join(month_lookup) |>
+    filter(month_num  %in% rearing_months) |> glimpse()
 
-  joined_spawn_capacity <- left_join(spawn_capacity, annual_adult_abundance) |>
+  joined_habitat <- left_join(inchannel_habitat, floodplain_habitat) |>
     transmute(year = as.numeric(year),
               scenario = scenario,
-              spawn_over_capacity = actual_total_spawners/spawner_capacity) |>
+              floodplain_over_inchannel = floodplain_habitat/inchannel_habitat) |>
     filter(!is.na(scenario)) |>
     group_by(scenario) |>
-    summarize(avg_annual_spawn_over_capacity = mean(spawn_over_capacity, na.rm = T),
-              min_annual_spawn_over_capacity = min(spawn_over_capacity, na.rm = T),
-              max_annual_spawn_over_capacity = max(spawn_over_capacity, na.rm = T)) |> glimpse()
+    summarize(avg_annual_floodplain_over_inchannel = mean(floodplain_over_inchannel, na.rm = T),
+              min_annual_floodplain_over_inchannel = min(floodplain_over_inchannel, na.rm = T),
+              max_annual_floodplain_over_inchannel = max(floodplain_over_inchannel, na.rm = T)) |> glimpse()
 
 }
 

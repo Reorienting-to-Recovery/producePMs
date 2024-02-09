@@ -8,9 +8,10 @@
 #' @param selected_run The selected chinook run.
 #'
 #' @return A dataframe containing performance metrics for different locations and years.
-#' @export
 #' @examples
 #' create_model_results_dataframe(model_results, model_parameters, "Scenario 1", "fall")
+#' @export
+
 create_model_results_dataframe <- function(model_results, model_parameters, scenario_name, selected_run) {
   nat_spawn <- dplyr::as_tibble(model_results$spawners * model_results$proportion_natural_at_spawning) |>
     dplyr::mutate(location = fallRunDSM::watershed_labels) |>

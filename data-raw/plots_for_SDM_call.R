@@ -1,6 +1,6 @@
 library(tidyverse)
 library(producePMs)
-source("data-raw/shiny-materials/process_model_results.R")
+source("data-raw/shiny-materials/process_blended_model_results.R")
 # remotes::install_github("Reorienting-to-Recovery/DSMflow", force = TRUE)
 library(DSMflow)
 library(fallRunDSM)
@@ -277,19 +277,19 @@ diverity_group_lookup <- tibble("Diversity Group" = c(1, 2, 3, 4, 5),
                                                                         paste(names(which(diversity_group == 5)), collapse = ", ")))
 View(diverity_group_lookup)
 
-# - Wetted acre day plot
+# # - Wetted acre day plot
 plot_data <- all_inputs |>
-  filter(performance_metric == "")
-
-plot_data |>
-  ggplot(aes(x = year, y = value, color = scenario)) +
-  geom_line() +
-  theme_minimal() +
-  scale_color_manual(values = colors_full) +
-  geom_hline(yintercept = 1, linetype = "dashed", color = "black") +
-  labs(x = "Simulation Year",
-       y = "Cohort Replacement Rate",
-       title = "Total Adult to Returning Natural Adult over Simulation Period")
+ filter(performance_metric == "8.1 & 8.2 Annual Wetted Acre Days")
+#
+# plot_data |>
+#   ggplot(aes(x = year, y = value, color = scenario)) +
+#   geom_line() +
+#   theme_minimal() +
+#   scale_color_manual(values = colors_full) +
+#   geom_hline(yintercept = 1, linetype = "dashed", color = "black") +
+#   labs(x = "Simulation Year",
+#        y = "Cohort Replacement Rate",
+#        title = "Total Adult to Returning Natural Adult over Simulation Period")
 
 # Harvest Plot
 #
@@ -385,12 +385,12 @@ plot_data_juvs |>
   facet_grid(~scenario)
 
 library(plotly)
-plot_ly(plot_data, x = plot_data$size_or_age, y = plot_data$month, z = plot_data$total_count,
-        group = plot_data$month, type = "scatter3d", mode = "lines")
+plot_ly(plot_data_juvs, x = plot_data_juvs$size_or_age, y = plot_data_juvs$month, z = plot_data_juvs$total_count,
+        group = plot_data_juvs$month, type = "scatter3d", mode = "lines")
 
 library(plotly)
 
-dens <- with(plot_data, tapply(size_or_age, INDEX = month, density))
+dens <- with(plot_data_juvs, tapply(size_or_age, INDEX = month, density))
 data <- data.frame(
   x = unlist(lapply(dens, "[[", "x")),
   y = unlist(lapply(dens, "[[", "y")),
@@ -512,7 +512,7 @@ produce_habitat_ratios <- function(model_parameters, watershed, scenario_name) {
 }
 
 produce_habitat_ratios(r_to_r_baseline_params, "Upper Sacramento River", "Baseline")
-produce_habitat_ratios(r_to_r_tmh_params, "Upper Sacramento River", "Max Habitat")
+produce_habitat_ratios(r_to_r_kitchen_sink_params, "Upper Sacramento River", "Max Habitat")
 
 
 # Survival step function

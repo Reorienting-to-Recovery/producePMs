@@ -9,12 +9,6 @@ produce_wetted_acre_day_floodplain_activation_pm(
   scenario,
   selected_run
 )
-
-produce_wetted_acre_day_floodplain_activation_pm(
-  model_parameters,
-  scenario,
-  selected_run
-)
 }
 \arguments{
 \item{model_parameters}{A data frame containing the model parameters.}
@@ -25,19 +19,11 @@ produce_wetted_acre_day_floodplain_activation_pm(
 }
 \value{
 A data frame containing the wetted acre-day floodplain activation metrics.
-
-A data frame containing the wetted acre-day floodplain activation metrics.
 }
 \description{
 Calculate the wetted acre-day floodplain based on model parameters and scenario.
-
-Calculate the wetted acre-day floodplain activation above 2 - year 30 day flood performance metrics based on model parameters and scenario.
 }
 \examples{
-model_params <- read.csv("model_parameters.csv")
-floodplain_activation <- produce_wetted_acre_day_floodplain_activation_pm(model_params, "Scenario1", "Fall")
-print(floodplain_activation)
-
 model_params <- read.csv("model_parameters.csv")
 floodplain_activation <- produce_wetted_acre_day_floodplain_activation_pm(model_params, "Scenario1", "Fall")
 print(floodplain_activation)
