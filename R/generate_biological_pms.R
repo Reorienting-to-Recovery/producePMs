@@ -439,12 +439,11 @@ produce_shannon_div_ind_size_and_timing_pm <- function(model_results_df){
 #' model_results <- data.frame(
 #'   spawning_habitat = c(100, 200, 150, 250),
 #'   location = c("Location A", "Location B", "Location A", "Location B"),
-#'   year_date = c("Jan-2021", "Jan-2021", "Feb-2021", "Feb-2021")
 #' )
-#' model_parameters <- list(spawning_habitat = data.frame(location = c("Location A", "Location B"), year_date = "Jan-2021", value = 300))
+#' model_parameters <- list(spawning_habitat = data.frame(location = c("Location A", "Location B"), value = 300))
 #'
 #' produce_carrying_capacity_vs_abundance(model_results, model_parameters, "fall")
-produce_floodplain_over_inchannel_habitat <- function(model_results_df, model_parameters, selected_run){
+produce_floodplain_over_inchannel_habitat <- function(model_results_df, model_parameters, selected_run, scenario){
   rearing_months <- switch(selected_run,
                            "fall" = c(1:8),
                            "spring" = c(1:5),

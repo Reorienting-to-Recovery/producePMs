@@ -1,35 +1,30 @@
 library(tidyverse)
 library(producePMs)
-source("data-raw/shiny-materials/process_model_results.R")
+source("data-raw/shiny-materials/process_blended_model_results.R")
 library(fallRunDSM)
 # For now just running baseline through - could map through all and reduce(bind_rows())
 # model_results <- create_model_results_dataframe(baseline_model_results, model_parameters = fallRunDSM::r_to_r_baseline_params, "Baseline Scenario", selected_run = "fall")
 # model_params <- fallRunDSM::r_to_r_baseline_params
 #
 params_list <- c(fall_baseline_results,
-                 fall_run_tmh_results,
-                 fall_run_no_harvest,
-                 fall_run_no_hatchery,
-                 fall_max_flow,
-                 fall_max_flow_max_hab,
-                 fall_max_hatcheries)
+                 fall_run_dy_results,
+                 fall_run_ks_results,
+                 fall_run_hh_results)
 
 scenarios_lists <- c("Baseline",
-                     "Theoretical Max Habitat",
-                     "No Harvest",
-                     "No Hatchery",
-                     "Max Flow",
-                     "Max Flow & Max Habitat",
-                     "Max Hatchery"
+                     "Dry Year",
+                     "Kitchen Sink",
+                     "Habitat and Hatchery"
 )
-run_list <- c("fall", "fall", "fall", "fall", "fall", "fall", "fall")
+run_list <- c("fall", "fall", "fall", "fall")
 ### Biological Objectives ### --------------------------------------------------
 # 1 #
 #
 produce_spawner_abundance_pm(all_res) |>
   arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |>
   pivot_longer(2:4, names_to = "type", values_to = "value") |>
-  pivot_wider(names_from = scenario, values_from = value) |> View()
+  pivot_wider(names_from = scenario, values_from = value) |>
+  mutate_if(is.numeric, pretty_num) |> View()
 
 # 2.1 #
 # Average central valley wide CRR-
@@ -42,6 +37,7 @@ produce_spawner_abundance_pm(all_res) |>
 produce_crr_geometric_mean_pm(all_res) |>
   arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |>
   pivot_longer(2:4, names_to = "type", values_to = "value") |>
+  mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
 
 # 2.2 #
@@ -49,6 +45,7 @@ produce_crr_geometric_mean_pm(all_res) |>
 produce_growth_rate_pm(all_res) |>
   arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |>
   pivot_longer(2:4, names_to = "type", values_to = "value") |>
+  mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
 
 # 3.1 #
@@ -75,6 +72,7 @@ produce_dependent_pops_per_diversity_group_pm(all_res, selected_run = "fall") |>
 produce_phos_pm(all_res) |>
   arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |>
   pivot_longer(3:5, names_to = "type", values_to = "value") |>
+  mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
 
 # 5.1 #
@@ -85,32 +83,36 @@ produce_categorical_return_age_pm(all_res) |>
 # 5.2 #
 # shannon diversity index
 produce_shannon_div_ind_size_pm(all_res) |>
+  mutate_if(is.numeric, pretty_num) |>
   arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |> View()
 
 # 5.3 #
 # size distribution & month of juveniles
 produce_shannon_div_ind_size_and_timing_pm(all_res) |>
+  mutate_if(is.numeric, pretty_num) |>
   arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |> View()
 
 # 5.4 #
 # TODO deal with this one
 
-produce_carrying_capacity_vs_abundance(fall_baseline_results, r_to_r_baseline_params, "fall")
-produce_carrying_capacity_vs_abundance(fall_run_tmh_results, r_to_r_tmh_params, "fall")
-produce_carrying_capacity_vs_abundance(fall_run_no_harvest, r_to_r_no_harvest_params, "fall")
-produce_carrying_capacity_vs_abundance(fall_run_no_hatchery, r_to_r_no_hatchery_params, "fall")
-produce_carrying_capacity_vs_abundance(fall_max_flow, r_to_r_max_flow_params, "fall")
-produce_carrying_capacity_vs_abundance(fall_max_flow_max_hab, r_to_r_max_flow_max_hab_params, "fall")
-produce_carrying_capacity_vs_abundance(fall_max_hatcheries, r_to_r_max_hatchery_params, "fall")
+produce_floodplain_over_inchannel_habitat(fall_baseline_results, r_to_r_baseline_params, "fall", "Baseline")
+produce_floodplain_over_inchannel_habitat(fall_run_dy_results, r_to_r_dry_years_params, "fall", "Dry Year")
+produce_floodplain_over_inchannel_habitat(fall_run_hh_results, r_to_r_habitat_and_hatchery_params, "fall", "Habitat and Hatchery")
+produce_floodplain_over_inchannel_habitat(fall_run_ks_results, r_to_r_kitchen_sink_params, "fall", "Kitchen Sink")
+
 
 # 6 #
 # marine derived nutrient
 produce_marine_nutrient_pm(all_res) |>
+  mutate_if(is.numeric, pretty_num) |>
   arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |> View()
 
 # 7 #
 # # time to recovery
-produce_time_to_recovery_pm(all_res, selected_run = "fall")
+produce_time_to_recovery_pm(fall_baseline_results, selected_run = "fall")
+produce_time_to_recovery_pm(fall_run_dy_results, selected_run = "fall")
+produce_time_to_recovery_pm(fall_run_hh_results, selected_run = "fall")
+produce_time_to_recovery_pm(fall_run_ks_results, selected_run = "fall")
 
 # lump all together for quick results
 
@@ -121,14 +123,12 @@ purrr::map(params_list, produce_juvenile_wetted_acre_day_pm, scenarios_lists, ru
 # 8.1 #
 # Wetted acre days of suitable juvenile rearing habitat
 bind_rows(produce_juvenile_wetted_acre_day_pm(r_to_r_baseline_params, scenario = "Baseline", selected_run = "fall"),
-produce_juvenile_wetted_acre_day_pm(r_to_r_tmh_params, scenario = "Theoretical Max Habitat", selected_run = "fall"),
-produce_juvenile_wetted_acre_day_pm(r_to_r_no_harvest_params, scenario = "No Harvest", selected_run = "fall"),
-produce_juvenile_wetted_acre_day_pm(r_to_r_no_hatchery_params, scenario = "No Hatchery", selected_run = "fall"),
-produce_juvenile_wetted_acre_day_pm(r_to_r_max_flow_params, scenario = "Max Flow", selected_run = "fall"),
-produce_juvenile_wetted_acre_day_pm(r_to_r_max_flow_max_hab_params, scenario = "Max Flow & Max Habitat", selected_run = "fall"),
-produce_juvenile_wetted_acre_day_pm(r_to_r_max_hatchery_params, scenario = "Max Hatchery", selected_run = "fall")) |>
-  arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |>
+produce_juvenile_wetted_acre_day_pm(r_to_r_dry_years_params, scenario = "Dry Years", selected_run = "fall"),
+produce_juvenile_wetted_acre_day_pm(r_to_r_habitat_and_hatchery_params, scenario = "Habitat and Hatchery", selected_run = "fall"),
+produce_juvenile_wetted_acre_day_pm(r_to_r_kitchen_sink_params, scenario = "Kitchen Sink", selected_run = "fall")) |>
+  arrange(factor(scenario, levels = c("Baseline", "Dry Years", "Habitat and Hatchery", "Kitchen Sink"))) |>
   pivot_longer(3:5, names_to = "type", values_to = "value") |>
+  mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
 
 
@@ -136,41 +136,33 @@ produce_juvenile_wetted_acre_day_pm(r_to_r_max_hatchery_params, scenario = "Max 
 # Wetted acre days of suitable spawning habitat
 produce_spawning_wetted_acre_day_pm(model_params, scenario = "Baseline", selected_run = "fall")
 bind_rows(produce_spawning_wetted_acre_day_pm(r_to_r_baseline_params, scenario = "Baseline", selected_run = "fall"),
-          produce_spawning_wetted_acre_day_pm(r_to_r_tmh_params, scenario = "Theoretical Max Habitat", selected_run = "fall"),
-          produce_spawning_wetted_acre_day_pm(r_to_r_no_harvest_params, scenario = "No Harvest", selected_run = "fall"),
-          produce_spawning_wetted_acre_day_pm(r_to_r_no_hatchery_params, scenario = "No Hatchery", selected_run = "fall"),
-          produce_spawning_wetted_acre_day_pm(r_to_r_max_flow_params, scenario = "Max Flow", selected_run = "fall"),
-          produce_spawning_wetted_acre_day_pm(r_to_r_max_flow_max_hab_params, scenario = "Max Flow & Max Habitat", selected_run = "fall"),
-          produce_spawning_wetted_acre_day_pm(r_to_r_max_hatchery_params, scenario = "Max Hatchery", selected_run = "fall")) |>
-  arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |>
+          produce_spawning_wetted_acre_day_pm(r_to_r_dry_years_params, scenario = "Dry Years", selected_run = "fall"),
+          produce_spawning_wetted_acre_day_pm(r_to_r_habitat_and_hatchery_params, scenario = "Habitat and Hatchery", selected_run = "fall"),
+          produce_spawning_wetted_acre_day_pm(r_to_r_kitchen_sink_params, scenario = "Kitchen Sink", selected_run = "fall")) |>
+  arrange(factor(scenario, levels = c("Baseline", "Dry Years", "Habitat and Hatchery", "Kitchen Sink"))) |>
   pivot_longer(3:5, names_to = "type", values_to = "value") |>
+  mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
 # 8.3 #
 # Spawning habitat decay rate (as a proxy for riverine condition)
 # Note: should update to change between scenarios when Emanuel updates spawn_decay_multiplier
 # STILL NOT WORKING - get values from EManuel and try and understand why it is so high here
 
-total_habitat_decay(model_params, scenario = "Baseline")
 bind_rows(total_habitat_decay(r_to_r_baseline_params, scenario = "Baseline", "fall"),
-          total_habitat_decay(r_to_r_tmh_params, scenario = "Theoretical Max Habitat", "fall"),
-          total_habitat_decay(r_to_r_no_harvest_params, scenario = "No Harvest", "fall"),
-          total_habitat_decay(r_to_r_no_hatchery_params, scenario = "No Hatchery", "fall"),
-          total_habitat_decay(r_to_r_max_flow_params, scenario = "Max Flow", "fall"),
-          total_habitat_decay(r_to_r_max_flow_max_hab_params, scenario = "Max Flow & Max Habitat", "fall"),
-          total_habitat_decay(r_to_r_max_hatchery_params, scenario = "Max Hatchery", "fall")) |>
-  arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |> View()
+          total_habitat_decay(r_to_r_dry_years_params, scenario = "Dry Years", "fall"),
+          total_habitat_decay(r_to_r_habitat_and_hatchery_params, scenario = "Habitat and Hatchery", "fall"),
+          total_habitat_decay(r_to_r_kitchen_sink_params, scenario = "Kitchen Sink", "fall")) |>
+  arrange(factor(scenario, levels = c("Baseline", "Dry Years", "Habitat and Hatchery", "Kitchen Sink"))) |> View()
 # 9.1
 # Wetted acre days - total days floodplain activation occurs
 produce_wetted_acre_day_floodplain_activation_pm(r_to_r_baseline_params, scenario = "Baseline", selected_run = "fall")
 bind_rows(produce_wetted_acre_day_floodplain_activation_pm(r_to_r_baseline_params, scenario = "Baseline", selected_run = "fall"),
-          produce_wetted_acre_day_floodplain_activation_pm(r_to_r_tmh_params, scenario = "Theoretical Max Habitat", selected_run = "fall"),
-          produce_wetted_acre_day_floodplain_activation_pm(r_to_r_no_harvest_params, scenario = "No Harvest", selected_run = "fall"),
-          produce_wetted_acre_day_floodplain_activation_pm(r_to_r_no_hatchery_params, scenario = "No Hatchery", selected_run = "fall"),
-          produce_wetted_acre_day_floodplain_activation_pm(r_to_r_max_flow_params, scenario = "Max Flow", selected_run = "fall"),
-          produce_wetted_acre_day_floodplain_activation_pm(r_to_r_max_flow_max_hab_params, scenario = "Max Flow & Max Habitat", selected_run = "fall"),
-          produce_wetted_acre_day_floodplain_activation_pm(r_to_r_max_hatchery_params, scenario = "Max Hatchery", selected_run = "fall")) |>
-  arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |>
+          produce_wetted_acre_day_floodplain_activation_pm(r_to_r_max_flow_params, scenario = "Dry Years", selected_run = "fall"),
+          produce_wetted_acre_day_floodplain_activation_pm(r_to_r_max_flow_max_hab_params, scenario =  "Habitat and Hatchery", selected_run = "fall"),
+          produce_wetted_acre_day_floodplain_activation_pm(r_to_r_max_hatchery_params, scenario =  "Kitchen Sink", selected_run = "fall")) |>
+  arrange(factor(scenario, levels = c("Baseline", "Dry Years", "Habitat and Hatchery", "Kitchen Sink"))) |>
   pivot_longer(3:5, names_to = "type", values_to = "value") |>
+  mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
 # 9.2 #
 # Functional Flow Metric
@@ -180,14 +172,12 @@ bind_rows(produce_wetted_acre_day_floodplain_activation_pm(r_to_r_baseline_param
 # TODO figure out logic for wetted acre days of floodplain
 produce_2yr_30d_floodplain_acres_pm
 bind_rows(produce_2yr_30d_floodplain_acres_pm(r_to_r_baseline_params, scenario = "Baseline", selected_run = "fall"),
-          produce_2yr_30d_floodplain_acres_pm(r_to_r_tmh_params, scenario = "Theoretical Max Habitat", selected_run = "fall"),
-          produce_2yr_30d_floodplain_acres_pm(r_to_r_no_harvest_params, scenario = "No Harvest", selected_run = "fall"),
-          produce_2yr_30d_floodplain_acres_pm(r_to_r_no_hatchery_params, scenario = "No Hatchery", selected_run = "fall"),
-          produce_2yr_30d_floodplain_acres_pm(r_to_r_max_flow_params, scenario = "Max Flow", selected_run = "fall"),
-          produce_2yr_30d_floodplain_acres_pm(r_to_r_max_flow_max_hab_params, scenario = "Max Flow & Max Habitat", selected_run = "fall"),
-          produce_2yr_30d_floodplain_acres_pm(r_to_r_max_hatchery_params, scenario = "Max Hatchery", selected_run = "fall")) |>
-  arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |>
+          produce_2yr_30d_floodplain_acres_pm(r_to_r_dry_years_params, scenario = "Dry Years", selected_run = "fall"),
+          produce_2yr_30d_floodplain_acres_pm(r_to_r_habitat_and_hatchery_params, scenario = "Habitat and Hatchery", selected_run = "fall"),
+          produce_2yr_30d_floodplain_acres_pm(r_to_r_kitchen_sink_params, scenario = "Kitchen Sink", selected_run = "fall")) |>
+  arrange(factor(scenario, levels = c("Baseline", "Dry Years", "Habitat and Hatchery", "Kitchen Sink"))) |>
   pivot_longer(3, names_to = "type", values_to = "value") |>
+  mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
 ### Access and Economics ### ---------------------------------------------------
 # 10#
@@ -205,28 +195,29 @@ all_inputs |>
 # Annual number of adults in rivers
 # (above abundance numbers required to meet biological objectives)
 produce_spawner_abundance_above_biological_objective_river_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |>
+  arrange(factor(scenario, levels = c("Baseline", "Dry Year", "Habitat and Hatchery", "Kitchen Sink"))) |>
   pivot_longer(2:4, names_to = "type", values_to = "value") |>
+  mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
 
 
 
 produce_spawner_abundance_above_biological_objective_ocean_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |>
+  arrange(factor(scenario, levels = c("Baseline", "Dry Year", "Habitat and Hatchery", "Kitchen Sink"))) |>
   pivot_longer(2:4, names_to = "type", values_to = "value") |>
+  mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
 
 
 # 12.3 #
+# TODO check on this one
 # % of years where annual number of adults in rivers and oceans (above abundance numbers required to meet biological objectives)
 # is >= 200K (minimum annual number of harvestable fish to support Indigenous, recreational, and commercial uses)
 produce_percent_harvestable_abv_threshold_pm(fall_baseline_results, selected_scenario = "Baseline")
-produce_percent_harvestable_abv_threshold_pm(fall_run_tmh_results, selected_scenario = "Theoretical Max Hab")
-produce_percent_harvestable_abv_threshold_pm(fall_run_no_harvest, selected_scenario = "No Harvest")
-produce_percent_harvestable_abv_threshold_pm(fall_run_no_hatchery, selected_scenario = "No Hatchery")
-produce_percent_harvestable_abv_threshold_pm(fall_max_flow, selected_scenario = "Max Flow")
-produce_percent_harvestable_abv_threshold_pm(fall_max_flow_max_hab, selected_scenario = "Max Flow and Hab")
-produce_percent_harvestable_abv_threshold_pm(fall_max_hatchery, selected_scenario = "Max Hatchery")
+produce_percent_harvestable_abv_threshold_pm(fall_run_dy_results, selected_scenario = "Dry Year")
+produce_percent_harvestable_abv_threshold_pm(fall_run_hh_results, selected_scenario = "Habitat and Hatchery")
+produce_percent_harvestable_abv_threshold_pm(fall_run_ks_results, selected_scenario = "Kitchen Sink")
+
 
 
 

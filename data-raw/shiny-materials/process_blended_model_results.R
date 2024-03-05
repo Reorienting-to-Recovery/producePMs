@@ -11,13 +11,22 @@ library(DSMhabitat)
 library(producePMs)
 library(tidyverse)
 
-# FALL BOOKEND RUNS ------------------------------------------------------------
-baseline_seeds <- fallRunDSM::fall_run_model(mode = "seed", ..params = fallRunDSM::r_to_r_baseline_params)
+# FALL BLENDED RUNS ------------------------------------------------------------
+baseline_seeds <- fallRunDSM::fall_run_model(mode = "seed",
+                                             seeds = fallRunDSM::adult_seeds,
+                                             ..params = fallRunDSM::r_to_r_baseline_params)
+
 baseline_model_results <- fallRunDSM::fall_run_model(mode = "simulate", ..params = fallRunDSM::r_to_r_baseline_params,
                                                 seeds = baseline_seeds)
 
 kitchen_sink_results <- fallRunDSM::fall_run_model(mode = "simulate", ..params = fallRunDSM::r_to_r_kitchen_sink_params,
                                                      seeds = baseline_seeds)
+
+dry_year_results <- fallRunDSM::fall_run_model(mode = "simulate", ..params = fallRunDSM::r_to_r_dry_years_params,
+                                                   seeds = baseline_seeds)
+
+hab_and_hatchery_results <- fallRunDSM::fall_run_model(mode = "simulate", ..params = fallRunDSM::r_to_r_habitat_and_hatchery_params,
+                                                   seeds = baseline_seeds)
 
 # CREATE RESULT DFS ------------------------------------------------------------
 fall_baseline_results <- create_model_results_dataframe(baseline_model_results,
@@ -27,7 +36,15 @@ fall_run_ks_results <- create_model_results_dataframe(kitchen_sink_results,
                                                                    model_parameters = fallRunDSM::r_to_r_kitchen_sink_params,
                                                                    "Kitchen Sink", selected_run = "fall")
 
-all_res <- bind_rows(fall_baseline_results, fall_run_ks_results)
+fall_run_dy_results <- create_model_results_dataframe(dry_year_results,
+                                                      model_parameters = fallRunDSM::r_to_r_dry_years_params,
+                                                      "Dry Year", selected_run = "fall")
+
+fall_run_hh_results <- create_model_results_dataframe(hab_and_hatchery_results,
+                                                      model_parameters = fallRunDSM::r_to_r_habitat_and_hatchery_params,
+                                                      "Habitat and Hatchery", selected_run = "fall")
+
+all_res <- bind_rows(fall_baseline_results, fall_run_ks_results, fall_run_dy_results, fall_run_hh_results)
 
 write_csv(all_res, "data-raw/shiny-materials/fall_blended_results_feb_2024.csv")
 
@@ -38,13 +55,18 @@ fall_baseline_inputs <- create_model_inputs_tidy_df(model_parameters = fallRunDS
                                                                  "Baseline", selected_run = "fall")
 fall_run_kitchen_sink_inputs <- create_model_inputs_tidy_df(model_parameters = fallRunDSM::r_to_r_kitchen_sink_params,
                                                             "Kitchen Sink", selected_run = "fall")
+fall_run_dry_year_inputs <- create_model_inputs_tidy_df(model_parameters = fallRunDSM::r_to_r_dry_years_params,
+                                                            "Dry Year", selected_run = "fall")
+fall_run_hab_and_hatchery_inputs <- create_model_inputs_tidy_df(model_parameters = fallRunDSM::r_to_r_habitat_and_hatchery_params,
+                                                            "Habitat and Hatchery", selected_run = "fall")
 
 # Add inputs for storage and deliveries from calsim nodes not within model parameters
 calsim_inputs <- create_calsim_non_cvpia_nodes_tidy() |>
   mutate(year = as.character(year))
 
 
-all_inputs <- bind_rows(fall_baseline_inputs, fall_run_kitchen_sink_inputs, calsim_inputs)
+all_inputs <- bind_rows(fall_baseline_inputs, fall_run_kitchen_sink_inputs, fall_run_dry_year_inputs,
+                        fall_run_hab_and_hatchery_inputs, calsim_inputs)
 
 write_csv(all_inputs, "data-raw/shiny-materials/fall_blended_inputs_feb_2024.csv")
 
