@@ -164,6 +164,7 @@ total_habitat_decay <- function(model_params, scenario, run){
 #' print(floodplain_activation)
 #'
 #' @export
+
 produce_wetted_acre_day_floodplain_activation_pm <- function(model_parameters, scenario, selected_run){
   rearing_months <- switch(selected_run,
                            "fall" = c(1:8),
@@ -212,6 +213,19 @@ produce_wetted_acre_day_floodplain_activation_pm <- function(model_parameters, s
 #'
 #' @export
 produce_2yr_30d_floodplain_acres_pm <- function(model_parameters, scenario, selected_run){
+  year_types <- waterYearType::water_year_indices |>
+    filter(location == "Sacramento Valley") |>
+    rename(water_year = WY) |>
+    mutate(year_type = ifelse(Yr_type %in% c("Wet", "Above Normal"), "wet", "dry")) |>
+    select(water_year, year_type)
+
+  dry_years <- year_types |> filter(year_type == "dry") |> pull(water_year)
+  wet_years <- year_types |> filter(year_type == "wet") |> pull(water_year)
+
+  dry_year_scenario_flow <- bind_rows(DSMflow::flows_cfs$eff_sac |>
+                                        filter(year(date) %in% as.numeric(dry_years)), DSMflow::flows_cfs$biop_itp_2018_2019 |>
+                                        filter(year(date) %in% as.numeric(wet_years)))
+
   flow_data <- switch(scenario,
                       "Baseline" = DSMflow::flows_cfs$biop_itp_2018_2019,
                       "Theoretical Max Habitat" = DSMflow::flows_cfs$biop_itp_2018_2019,
@@ -219,10 +233,11 @@ produce_2yr_30d_floodplain_acres_pm <- function(model_parameters, scenario, sele
                       "No Hatchery" = DSMflow::flows_cfs$biop_itp_2018_2019,
                       "Max Flow" = DSMflow::flows_cfs$run_of_river,
                       "Max Flow & Max Habitat" = DSMflow::flows_cfs$run_of_river,
-                      "Dry Years" = DSMflow::flows_cfs$eff_sac, # fix this...
+                      "Dry Years" = dry_year_scenario_flow, # fix this...
                       "Habitat and Hatchery" = DSMflow::flows_cfs$biop_itp_2018_2019,
                       "Kitchen Sink" = DSMflow::flows_cfs$eff_sac,
-                      "Max Hatchery" = DSMflow::flows_cfs$biop_itp_2018_2019) |> # TODO update
+                      "Max Hatchery" = DSMflow::flows_cfs$biop_itp_2018_2019,
+                      "Planned Plus" = DSMflow::flows_cfs$biop_itp_2018_2019) |> # TODO update
     mutate("Lower-mid Sacramento River" = 35.6/58 * `Lower-mid Sacramento River1` + 22.4/58 * `Lower-mid Sacramento River2`) |>
     select(-`Lower-mid Sacramento River1`, -`Lower-mid Sacramento River2`)
   create_threshold_df <- function(watershed) {

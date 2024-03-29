@@ -16,6 +16,7 @@ colors_full <-  c("#9A8822", "#F5CDB4",
                   "#D8B70A", "#EAD3BF", "#AA9486", "#B6854D", "#798E87", # Isle of dogs 2 altered slightly
                   "gray", "lightblue4"
 )
+
 colors_small <-  c("#9A8822", "#F5CDB4", "#F8AFA8", "#FDDDA0", "#74A089", #Royal 2
                    "#899DA4", "#C93312", "#DC863B" # royal 1 (- 3)
 )
@@ -34,15 +35,19 @@ blues <- c( "Run of River" = "#899DA4", "Biop (Baseline)" = "#7294D4")
 
 # CRR -------------------------------------------------------------------------
 # - CRR - show some more hatchery dominated tribs, show a few less dominated tribs
+#
+# -   Upper Sacramento River
+#
+# -   American River (?)
+#
+# -   Stanislaus River
+#
+# -   Tuolumne River
 plot_data <- all_res |>
   filter(performance_metric == "2.1 CRR: Total Adult to Returning Natural Adult",
-         scenario != "Max Flow & Max Habitat",
-         location %in% c("Clear Creek", "Yuba River", "Feather River", "American River")
-         )  |>
-  mutate(scenario = case_when(scenario == "Max Flow" ~ "Run of River",
-                              scenario == "Theoretical Max Habitat" ~ "Max Habitat",
-                              T ~ scenario)) |>
-glimpse()
+         location %in% c("Upper Sacramento River", "Stanislaus River", "Tuolumne River", "American River"),
+         scenario != "Planned Plus")  |>
+  glimpse()
 
 plot_data |>
   ggplot(aes(x = year, y = value, color = location)) +
@@ -61,6 +66,42 @@ plot_data |>
     plot.title = element_text(size = 20)
   )
 
+ggsave("data-raw/figures/crr_plot.png")
+
+# GROWTH RATE -------------------------------------------------------------------------
+# - CRR - show some more hatchery dominated tribs, show a few less dominated tribs
+#
+# -   Upper Sacramento River
+#
+# -   American River (?)
+#
+# -   Stanislaus River
+#
+# -   Tuolumne River
+plot_data <- all_res |>
+  filter(performance_metric == "2.2 Growth Rate Spawners",
+         location %in% c("Upper Sacramento River", "Stanislaus River", "Tuolumne River", "American River"),
+         scenario != "Planned Plus")  |>
+  glimpse()
+
+plot_data |>
+  ggplot(aes(x = year, y = value, color = location)) +
+  geom_line() +
+  theme_minimal() +
+  scale_color_manual(values = colors_full) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+  facet_wrap(~scenario) +
+  labs(x = "Simulation Year",
+       y = "Growth Rate",
+       title = "Growth Rate over Simulation Period") +
+  theme(
+    plot.caption = element_text(hjust = 0, face = "italic"),# move caption to the left
+    axis.text = element_text(size = 15),
+    axis.title = element_text(size = 20),
+    plot.title = element_text(size = 20)
+  )
+
+ggsave("data-raw/figures/growth_rate_plot.png")
 ### All Spawn ------------------------------------------------------------------
 # - Spawners - overlay flows & All spawners number(Upper Sac)
 water_yt_lookup <- waterYearType::water_year_indices |>
@@ -78,21 +119,22 @@ flow_data_biop <- DSMflow::flows_cfs$biop_itp_2018_2019 |>
   left_join(water_yt_lookup) |>
   glimpse()
 
-flow_data_ror <- DSMflow::flows_cfs$run_of_river |>
+flow_data_eff <- DSMflow::flows_cfs$eff_sac |>
   pivot_longer(cols = -date, names_to = "watershed", values_to = "flow_cfs") |>
   filter(date >= lubridate::as_date("1979-01-01"),
          watershed == "Upper Sacramento River") |>
   mutate(water_year = ifelse(month(date) %in% 10:12, year(date) + 1, year(date)),
-         Hydrology = "Run of River") |>
+         Hydrology = "EFF") |>
   filter(water_year < 2001) |>
   left_join(water_yt_lookup) |> glimpse()
 
-flow_data <-bind_rows(flow_data_biop, flow_data_ror)
+flow_data <-bind_rows(flow_data_biop, flow_data_eff)
 
 year_lookup <- tibble(year = 1:21,
                       actual_year = 1980:2000)
 flow_spawn_plot_data <- all_res |>
-  filter(performance_metric == "1 All Spawners") |>
+  filter(performance_metric == "1 All Spawners",
+         scenario != "Planned Plus") |>
   group_by(year, scenario, run) |>
   summarize(value = sum(value, na.rm = TRUE)) |>
   left_join(year_lookup) |>
@@ -101,13 +143,13 @@ flow_spawn_plot_data <- all_res |>
 
 # Spawn plot with 20 years of data
 ggplot() +
-  # geom_area(data = flow_data, aes(x = date, y = flow_cfs, fill = Hydrology), alpha = .5, position = "identity") +
+  geom_area(data = flow_data, aes(x = date, y = flow_cfs, fill = Hydrology), alpha = .5, position = "identity") +
   geom_col(data = flow_data, aes(x = date, y = -4000, fill = year_type), alpha = 1, width = 31) +
   scale_fill_manual(values = muted,
                     # limits = c("Run of River", "Biop (Baseline)")
                    #  limits = c('Critical', 'Dry', 'Below Normal', 'Above Normal', 'Wet')
                     ) +
-  # geom_line(data = flow_data, aes(x = date, y = flow_cfs), color = "black", linewidth = .1) +
+  geom_line(data = flow_data, aes(x = date, y = flow_cfs), color = "black", linewidth = .1) +
   geom_line(data = flow_spawn_plot_data, aes(x = date, y = value, color = scenario),linewidth = .5, alpha = 1) +
   scale_color_manual(values = c(rep("gray", 7))) +
   geom_line(data = flow_spawn_plot_data |> filter(scenario == "Baseline"), aes(x = date, y = value), color = "black", linewidth = .5, alpha = 1) +
@@ -115,13 +157,13 @@ ggplot() +
   labs(title = "Historical Water Year Types, and Total Spawner Abundance",
        y = "Spawner Abundance",
        x = "Year",
-       linetype = "Bookend Scenario",
-       fill = "Hydrology"
-       # caption = "Note: These numbers only reflect Upper Sacramento River Fall Run Chinook Spawners. Baseline and No Hatchery perform very simmilarly in the Upper Sacramento River."
+       linetype = "Blended Scenario",
+       fill = "Hydrology",
+       caption = "Note: These numbers only reflect Upper Sacramento River Fall Run Chinook Spawners. Baseline and No Hatchery perform very simmilarly in the Upper Sacramento River."
        ) +
   theme_minimal() +
   theme(
-    plot.caption = element_text(hjust = 0, face = "italic"),# move caption to the left
+    # plot.caption = element_text(hjust = 0, face = "italic"),# move caption to the left
     # legend.position = c(0.85, 0.7),
     legend.position = "none",
     axis.text = element_text(size = 15),
@@ -135,15 +177,15 @@ ggplot() +
   geom_area(data = flow_data, aes(x = date, y = flow_cfs, fill = Hydrology), alpha = .5, position = "identity") +
   # geom_col(data = flow_data, aes(x = date, y = -4000, fill = year_type), alpha = 1, width = 31) +
   scale_fill_manual(values = muted,
-                    limits = c("Run of River", "Biop (Baseline)")
+                    limits = c("EFF", "Biop (Baseline)")
                     ) +
   # geom_line(data = flow_data, aes(x = date, y = flow_cfs), color = "black", linewidth = .1) +
   # geom_line(data = flow_spawn_plot_data, aes(x = date, y = value, color = scenario),linewidth = .5, alpha = 1) +
   # scale_color_manual(values = c(rep("gray", 7))) +
   # geom_line(data = flow_spawn_plot_data |> filter(scenario == "Baseline"), aes(x = date, y = value), color = "black", linewidth = .5, alpha = 1) +
   scale_y_continuous(labels = scales::comma) +
-  labs(title = "Upper Sacramento River Flows",
-       subtitle = "Baseline and Run of River",
+  labs(title = "Sacramento River Flows",
+       subtitle = "Baseline and EFF",
        y = "Flow CFS",
        x = "Year",
        # linetype = "Bookend Scenario",
@@ -157,6 +199,8 @@ ggplot() +
     axis.title = element_text(size = 20),
     plot.title = element_text(size = 20)
   )
+ggsave("data-raw/figures/hydrology.png")
+
 
 # just abundance
 ggplot() +
@@ -174,19 +218,98 @@ ggplot() +
   labs(title = "Total Spawner Abundance over Time",
        y = "Spawner Abundance",
        x = "Year",
-       color = "Bookend Scenario",
+       color = "Blended Scenario",
        fill = "Hydrology",
       #  caption = "Note: These numbers only reflect Upper Sacramento River Fall Run Chinook Spawners. Baseline and No Hatchery perform very simmilarly in the Upper Sacramento River."
        ) +
   theme_minimal() +
   theme(
     plot.caption = element_text(hjust = 0, face = "italic"),# move caption to the left
-    legend.position = c(0.85, 0.7),
+    legend.position = "bottom",
     # legend.position = "none",
     axis.text = element_text(size = 15),
     axis.title = element_text(size = 20),
     plot.title = element_text(size = 20)
   )
+ggsave("data-raw/figures/spawner_abundance_plot.png")
+
+# flow_spawn_plot_data <- all_res |>
+#   filter(performance_metric == "1 All Spawners",
+#          scenario != "Planned Plus") |>
+#   group_by(year, scenario, run, location) |>
+#   summarize(value = sum(value, na.rm = TRUE)) |>
+#   left_join(year_lookup) |>
+#   mutate(date = as.Date(paste0(actual_year, "-12-31"))) |>
+#   filter(scenario == "Habitat and Hatchery",
+#          location == "Feather River") |> glimpse()
+#
+# ggplot() +
+#   geom_line(data = flow_spawn_plot_data, aes(x = date, y = value, color = location),linewidth = .5, alpha = 1) +
+#   scale_color_manual(values = scenario_six_colors) +
+#   # geom_line(data = flow_spawn_plot_data |> filter(scenario == "Baseline"), aes(x = date, y = value), color = "black", linewidth = .5, alpha = 1) +
+#   scale_y_continuous(labels = scales::comma) +
+#   labs(title = "Total Spawner Abundance over Time",
+#        y = "Spawner Abundance",
+#        x = "Year",
+#        color = "Blended Scenario",
+#        fill = "Hydrology",
+#        #  caption = "Note: These numbers only reflect Upper Sacramento River Fall Run Chinook Spawners. Baseline and No Hatchery perform very simmilarly in the Upper Sacramento River."
+#   ) +
+#   theme_minimal() +
+#   theme(
+#     plot.caption = element_text(hjust = 0, face = "italic"),# move caption to the left
+#     legend.position = "bottom",
+#     # legend.position = "none",
+#     axis.text = element_text(size = 15),
+#     axis.title = element_text(size = 20),
+#     plot.title = element_text(size = 20)
+#   ) +
+#   geom_hline(yintercept = 500)
+
+## Percent Difference ----------------------------------------------------------
+# create percent diff formula
+percent_diff <- function(old_value, new_value) {
+  ((new_value - old_value) / old_value) * 100
+}
+
+# create spawner
+spawners_per_dif <- all_res |>
+  filter(performance_metric == "1 All Spawners",
+         scenario != "Planned Plus")  |>
+  pivot_wider(names_from = scenario, values_from = value) |>
+  group_by(year) |>
+  summarize(`Baseline` = sum(`Baseline`, na.rm = TRUE),
+            `Dry Year` = sum(`Dry Year`, na.rm = TRUE),
+            `Kitchen Sink` = sum(`Kitchen Sink`, na.rm = TRUE),
+            `Habitat and Hatchery` = sum(`Habitat and Hatchery`, na.rm = TRUE)) |>
+  mutate(`Dry Year` = percent_diff(`Baseline`, `Dry Year`),
+         `Kitchen Sink` = percent_diff(`Baseline`, `Kitchen Sink`),
+         `Habitat and Hatchery` = percent_diff(`Baseline`, `Habitat and Hatchery`)) |>
+  pivot_longer(`Dry Year`:`Habitat and Hatchery`, names_to = "scenario", values_to = "value") |> glimpse()
+
+ggplot() +
+  geom_line(data = spawners_per_dif, aes(x = year, y = value, color = scenario),linewidth = .5, alpha = 1) +
+  scale_color_manual(values = scenario_six_colors) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Relative Change from Baseline",
+       y = "Relative Change from Baseline",
+       x = "Year",
+       color = "Blended Scenario",
+  ) +
+  theme_minimal() +
+  theme(
+    plot.caption = element_text(hjust = 0, face = "italic"),# move caption to the left
+    legend.position = "bottom",
+    # legend.position = "none",
+    axis.text = element_text(size = 15),
+    axis.title = element_text(size = 20),
+    plot.title = element_text(size = 20),
+    legend.text = element_text(size=15),
+    legend.title = element_text(size=15)
+  ) +
+  scale_y_continuous(labels = scales::unit_format(unit = "T", scale = 1e-3))
+
+ggsave("data-raw/figures/percent_diff_plot.png")
 
 ## Fish Present Map ------------------------------------------------------------
 # - potential map through the 20 year simulation indicating where fish are present
@@ -228,7 +351,7 @@ leaflet() %>%
 diversity_groups <- fallRunDSM::diversity_group
 fish_present_data <- all_res |>
   filter(performance_metric == "1 All Spawners",
-         scenario != "Theoretical Max Habitat") |>
+         scenario != "Planned Plus") |>
   mutate(scenario = case_when(scenario == "Max Flow" ~ "Run of River",
                               scenario == "Max Flow & Max Habitat" ~ "Run of River & Max Habitat",
                               scenario == "Theoretical Max Habitat" ~ "Max Habitat",
@@ -301,13 +424,8 @@ plot_data <- all_inputs |>
 # Max Hab - PHOS ---
 phos_plot_data <- all_res |>
   filter(performance_metric %in% c("4 PHOS", "1 All Spawners"),
-         scenario %in% c("Baseline",
-                         "Theoretical Max Habitat",
-                         # "Max Flow",
-                         "No Hatchery",
-                         "Max Hatchery")
+         scenario != "Planned Plus") |>
          # location %in% c("Clear Creek", "Yuba River", "Feather River", "American River")
-  )  |>
   pivot_wider(names_from = performance_metric, values_from = value) |>
   group_by(scenario, year) |>
   summarize(value = weighted.mean(`4 PHOS`, `1 All Spawners`, na.rm = TRUE)) |>
@@ -335,6 +453,7 @@ phos_plot_data |>
     axis.title = element_text(size = 20),
     plot.title = element_text(size = 20)
   )
+ggsave("data-raw/figures/phos_plot.png")
 
 
 # OTHER PLOT IDEAS
@@ -345,8 +464,8 @@ scenarios = "Baseline"
 
 plot_data_juvs <- all_res |>
   filter(performance_metric == "Juveniles Size at Ocean Entry",
-         scenario %in% c("Baseline", "Max Flow"),
-         location == "Battle Creek") |>
+         location == "Upper Sacramento River",
+         scenario != "Planned Plus") |>
   group_by(month, scenario, size_or_age) |>
   summarize(total_count = round(sum(value, na.rm = TRUE))) |>
   ungroup() |>
@@ -372,7 +491,7 @@ plot_data_juvs |>
   labs(title = "Size Distribution of Upper Sacramento River Juvenile Outmigrants",
        subtitle = "Average Juveniles at Chipps over 20 year simulation",
        y = "Total Count",
-       x = "Month",
+       x = "",
        fill = "Size Class") +
   theme(
     plot.caption = element_text(hjust = 0, face = "italic"),# move caption to the left
@@ -380,9 +499,171 @@ plot_data_juvs |>
     # legend.position = "none",
     axis.text = element_text(size = 15),
     axis.title = element_text(size = 20),
-    plot.title = element_text(size = 20)
+    plot.title = element_text(size = 20),
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)
   ) +
   facet_grid(~scenario)
+ggsave("data-raw/figures/juvenile_size_at_chips_plot.png")
+
+
+# THRESHOLD PM, dot plots
+potential_dependent_pops <- c("Bear River", "Big Chico Creek", "Elder Creek", "Paynes Creek",  "Stoney Creek", "Thomes Creek")
+non_spawn_regions <- c("Upper-mid Sacramento River", "Sutter Bypass",
+                       "Lower-mid Sacramento River", "Yolo Bypass",
+                       "Lower Sacramento River", "San Joaquin River")
+ind_pop <- all_res |>
+  select(-size_or_age, -origin, -month, -run) |>
+  filter(performance_metric %in% c("Natural Spawners", "2.2 Growth Rate Spawners",
+                                   "4 PHOS", "2.1 CRR: Total Adult to Returning Natural Adult"),
+         !location %in% potential_dependent_pops,
+         !location %in% non_spawn_regions) |>
+  pivot_wider(names_from = performance_metric, values_from = value) |>
+  # round results
+  mutate(`2.1 CRR: Total Adult to Returning Natural Adult` = round(`2.1 CRR: Total Adult to Returning Natural Adult`, 1),
+         intrinsic_growth_rate = round(log(`Natural Spawners`) - log(lag(`Natural Spawners`))),
+         `2.2 Growth Rate Spawners` = round(`2.2 Growth Rate Spawners`, 1),
+         `4 PHOS` = round(`4 PHOS`, 2),
+         `Natural Spawners` = round(`Natural Spawners`)) |>
+  # categorize as meets threshold or not
+  mutate(above_500_spawners = if_else(`Natural Spawners` > 500, TRUE, FALSE),
+         phos_less_than_5_percent = ifelse(`4 PHOS` < .05, TRUE, FALSE),
+         crr_above_1 = ifelse(`2.1 CRR: Total Adult to Returning Natural Adult` >= 1, TRUE, FALSE),
+         growth_rate_above_1 = ifelse(`2.2 Growth Rate Spawners` >= 0, TRUE, FALSE),
+         independent_population = ifelse(above_500_spawners & phos_less_than_5_percent &
+                                           growth_rate_above_1 & crr_above_1, TRUE, FALSE))
+# Kitchen Sink
+ind_pop |>
+  filter(scenario == "Kitchen Sink") |>
+  mutate(phos_less_than_5_percent = ifelse(is.na(phos_less_than_5_percent), FALSE, phos_less_than_5_percent)) |>
+  select(year, location, above_500_spawners, phos_less_than_5_percent) |>
+  pivot_longer(above_500_spawners:phos_less_than_5_percent, names_to = "metric", values_to = "value") |>
+  mutate(metric = ifelse(metric == "above_500_spawners", "Above 500 Spawners", "PHOS < 5%")) |>
+  ggplot(aes(x = year, y = location, color = value)) +
+  geom_point(size = 4) +
+  scale_color_manual(values = c("#CCC591", "cadetblue4", "#CCC591"), name = "") +
+  theme_minimal() +
+  labs(y = "",
+       x = "",
+       title = "Pouplation and Hatchery Biological Parameters",
+       subtitle = "Kitchen Sink") +
+  theme(legend.position = "bottom") +
+  facet_wrap(~metric)
+ggsave("data-raw/figures/kitchen_sink_phos&abundance_params.png")
+
+
+ind_pop |>
+  filter(scenario == "Kitchen Sink") |>
+  filter(year > 5) |>
+  group_by(location) |>
+  summarise("Average CRR" = round(mean(`2.1 CRR: Total Adult to Returning Natural Adult`, na.rm = TRUE), 2),
+            "Average Growth Rate" = round(mean(`2.2 Growth Rate Spawners`, na.rm = TRUE), 2)) |>
+  pivot_longer("Average CRR":"Average Growth Rate", names_to = "stat", values_to = "value") |>
+  mutate(above_threshold = case_when(stat == "Average CRR" & value > 1 ~ TRUE,
+                                     stat ==  "Average Growth Rate" & value > 0 ~ TRUE,
+                                     T ~ FALSE)) |>
+  ggplot(aes(x = location, y = value, fill = above_threshold)) +
+  geom_col(size = 4) +
+  scale_fill_manual(values = c("cadetblue4"), name = "") +
+  ylim(-1, 8) +
+  theme_minimal() +
+  labs(y = "",
+       x = "",
+       title = "Average Productivity Metrics (yr 5 - 20) of simulation",
+       subtitle = "Kitchen Sink") +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  facet_wrap(~stat, nrow = 2)
+ggsave("data-raw/figures/kitchen_sink_gr&crr.png")
+
+# Habitat and Hatchery
+ind_pop |>
+  filter(scenario == "Habitat and Hatchery") |>
+  mutate(phos_less_than_5_percent = ifelse(is.na(phos_less_than_5_percent), FALSE, phos_less_than_5_percent)) |>
+  select(year, location, above_500_spawners, phos_less_than_5_percent) |>
+  pivot_longer(above_500_spawners:phos_less_than_5_percent, names_to = "metric", values_to = "value") |>
+  mutate(metric = ifelse(metric == "above_500_spawners", "Above 500 Spawners", "PHOS < 5%")) |>
+  ggplot(aes(x = year, y = location, color = value)) +
+  geom_point(size = 4) +
+  scale_color_manual(values = c("#CCC591", "cadetblue4", "#CCC591"), name = "") +
+  theme_minimal() +
+  labs(y = "",
+       x = "",
+       title = "Pouplation and Hatchery Biological Parameters",
+       subtitle = "Habitat and Hatchery") +
+  theme(legend.position = "bottom") +
+  facet_wrap(~metric)
+ggsave("data-raw/figures/habitat_and_hatchery_phos&abundance_params.png")
+
+
+ind_pop |>
+  filter(scenario == "Habitat and Hatchery") |>
+  filter(year > 5) |>
+  group_by(location) |>
+  summarise("Average CRR" = round(mean(`2.1 CRR: Total Adult to Returning Natural Adult`, na.rm = TRUE), 2),
+            "Average Growth Rate" = round(mean(`2.2 Growth Rate Spawners`, na.rm = TRUE), 2)) |>
+  pivot_longer("Average CRR":"Average Growth Rate", names_to = "stat", values_to = "value") |>
+  mutate(above_threshold = case_when(stat == "Average CRR" & value > 1 ~ TRUE,
+                                     stat ==  "Average Growth Rate" & value > 0 ~ TRUE,
+                                     T ~ FALSE)) |>
+  ggplot(aes(x = location, y = value, fill = above_threshold)) +
+  geom_col(size = 4) +
+  scale_fill_manual(values = c("#CCC591", "cadetblue4"), name = "") +
+  theme_minimal() +
+  ylim(-1, 8) +
+  labs(y = "",
+       x = "",
+       title = "Average Productivity Metrics (yr 5 - 20) of simulation",
+       subtitle = "Habitat and Hatchery") +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  facet_wrap(~stat, nrow = 2)
+ggsave("data-raw/figures/hab&hatchery_gr&crr.png")
+
+# Dry Year
+ind_pop |>
+  filter(scenario == "Dry Year") |>
+  mutate(phos_less_than_5_percent = ifelse(is.na(phos_less_than_5_percent), FALSE, phos_less_than_5_percent)) |>
+  select(year, location, above_500_spawners, phos_less_than_5_percent) |>
+  pivot_longer(above_500_spawners:phos_less_than_5_percent, names_to = "metric", values_to = "value") |>
+  mutate(metric = ifelse(metric == "above_500_spawners", "Above 500 Spawners", "PHOS < 5%")) |>
+  ggplot(aes(x = year, y = location, color = value)) +
+  geom_point(size = 4) +
+  scale_color_manual(values = c("#CCC591", "cadetblue4", "#CCC591"), name = "") +
+  theme_minimal() +
+  labs(y = "",
+       x = "",
+       title = "Pouplation and Hatchery Biological Parameters",
+       subtitle = "Habitat and Hatchery") +
+  theme(legend.position = "bottom") +
+  facet_wrap(~metric)
+ggsave("data-raw/figures/dry_years_phos&abundance_params.png")
+
+
+ind_pop |>
+  filter(scenario == "Dry Year") |>
+  filter(year > 5) |>
+  group_by(location) |>
+  summarise("Average CRR" = round(mean(`2.1 CRR: Total Adult to Returning Natural Adult`, na.rm = TRUE), 2),
+            "Average Growth Rate" = round(mean(`2.2 Growth Rate Spawners`, na.rm = TRUE), 2)) |>
+  pivot_longer("Average CRR":"Average Growth Rate", names_to = "stat", values_to = "value") |>
+  mutate(above_threshold = case_when(stat == "Average CRR" & value > 1 ~ TRUE,
+                                     stat ==  "Average Growth Rate" & value > 0 ~ TRUE,
+                                     T ~ FALSE)) |>
+  ggplot(aes(x = location, y = value, fill = above_threshold)) +
+  geom_col(size = 4) +
+  scale_fill_manual(values = c("cadetblue4"), name = "") +
+  theme_minimal() +
+  ylim(-1, 8) +
+  labs(y = "",
+       x = "",
+       title = "Average Productivity Metrics (yr 5 - 20) of simulation",
+       subtitle = "Dry Years") +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  facet_wrap(~stat, nrow = 2)
+ggsave("data-raw/figures/dry_years_gr&crr.png")
+
+
 
 library(plotly)
 plot_ly(plot_data_juvs, x = plot_data_juvs$size_or_age, y = plot_data_juvs$month, z = plot_data_juvs$total_count,
@@ -430,6 +711,40 @@ pulse_flows |>
   theme_minimal()
   # facet_wrap(~location)
   #
+
+
+produce_crr_geometric_mean_pm <- function(model_results_df){
+  geom_mean_calc <- function(watershed, scenario) {
+    data <- model_results_df |>
+      filter(performance_metric == "2.1 CRR: Total Adult to Returning Natural Adult",
+             location == watershed) |>
+      select(year, location, scenario, run, performance_metric, value) |>
+      mutate(geometric_mean = zoo::rollapply(value, 3, psych::geometric.mean, fill = NA)) |>
+      filter(!is.na(geometric_mean))
+    return(data)
+  }
+  watersheds <- rep(fallRunDSM::watershed_labels, 7)
+  scenarios_lists <- c(rep("Baseline", 31),
+                       rep("Theoretical Max Habitat", 31),
+                       rep("No Harvest", 31),
+                       rep("No Hatchery", 31),
+                       rep("Max Flow", 31),
+                       rep("Max Flow & Max Habitat", 31),
+                       rep("Max Hatchery", 31))
+
+  res <- purrr::map2(watersheds,scenarios_lists, geom_mean_calc) |> reduce(bind_rows)
+  goem_mean_crr <- res |>
+    group_by(location, scenario) |>
+    summarize(average_crr = mean(geometric_mean, na.rm = TRUE)) |>
+    ungroup() |>
+    mutate(average_crr = ifelse(average_crr == Inf, 0, average_crr)) |>
+    group_by(scenario) |>
+    summarize(avg_annual_crr = mean(average_crr, na.rm = T),
+              min_annual_crr = min(average_crr, na.rm = T),
+              max_annual_crr = max(average_crr, na.rm = T))
+  return(goem_mean_crr)
+}
+produce_crr_geometric_mean_pm(all_res)
 
 
 # habitat decay
@@ -512,7 +827,7 @@ produce_habitat_ratios <- function(model_parameters, watershed, scenario_name) {
 }
 
 produce_habitat_ratios(r_to_r_baseline_params, "Upper Sacramento River", "Baseline")
-produce_habitat_ratios(r_to_r_kitchen_sink_params, "Upper Sacramento River", "Max Habitat")
+produce_habitat_ratios(r_to_r_kitchen_sink_params, "Upper Sacramento River", "Kitchen Sink")
 
 
 # Survival step function
@@ -525,3 +840,9 @@ ggplot(steps, aes(x = `Flow (cms)`, y = `Migratory Survival`)) +
   theme_minimal() +
   labs(title = "Upper Sacramento River Migratory Survival Curves") +
   theme(text = element_text(size = 15))
+
+produce_habitat_ratios(model_parameters = fallRunDSM::r_to_r_baseline_params,
+                       watershed = "Upper Sacramento River")
+
+produce_habitat_ratios(model_parameters = fallRunDSM::r_to_r_kitchen_sink_params,
+                       watershed = "Upper Sacramento River")

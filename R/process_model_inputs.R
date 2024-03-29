@@ -100,6 +100,19 @@ create_model_inputs_tidy_df <- function(model_parameters, scenario_name, selecte
             run = selected_run,
             performance_metric = "8.3 Habitat Decay Acres")
 
+   year_types <- waterYearType::water_year_indices |>
+     filter(location == "Sacramento Valley") |>
+     rename(water_year = WY) |>
+     mutate(year_type = ifelse(Yr_type %in% c("Wet", "Above Normal"), "wet", "dry")) |>
+     select(water_year, year_type)
+
+   dry_years <- year_types |> filter(year_type == "dry") |> pull(water_year)
+   wet_years <- year_types |> filter(year_type == "wet") |> pull(water_year)
+
+   dry_year_scenario_flow <- bind_rows(DSMflow::flows_cfs$eff_sac |>
+       filter(year(date) %in% as.numeric(dry_years)), DSMflow::flows_cfs$biop_itp_2018_2019 |>
+       filter(year(date) %in% as.numeric(wet_years)))
+
    # floodplain above threshold ------------------------------------------------
    flow_data <- switch(scenario_name,
                        "Baseline" = DSMflow::flows_cfs$biop_itp_2018_2019,
@@ -110,8 +123,9 @@ create_model_inputs_tidy_df <- function(model_parameters, scenario_name, selecte
                        "Max Flow" = DSMflow::flows_cfs$run_of_river,
                        "Max Hatchery" = DSMflow::flows_cfs$biop_itp_2018_2019,
                        "Kitchen Sink" = DSMflow::flows_cfs$eff_sac,
-                       "Dry Year" = DSMflow::flows_cfs$eff_sac, # TODO fix this one for non dry year make biop
-                       "Habitat and Hatchery" = DSMflow::flows_cfs$biop_itp_2018_2019) |> # TODO update
+                       "Dry Year" = dry_year_scenario_flow, # TODO fix this one for non dry year make biop
+                       "Habitat and Hatchery" = DSMflow::flows_cfs$biop_itp_2018_2019, # TODO update
+                       "Planned Plus" = DSMflow::flows_cfs$biop_itp_2018_2019) |>
      mutate("Lower-mid Sacramento River" = 35.6/58 * `Lower-mid Sacramento River1` + 22.4/58 * `Lower-mid Sacramento River2`) |>
      select(-`Lower-mid Sacramento River1`, -`Lower-mid Sacramento River2`)
 

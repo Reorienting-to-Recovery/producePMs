@@ -574,7 +574,7 @@ produce_time_to_recovery_pm <- function(model_results_df, selected_run) {
   if (nrow(ind_pops) > 0){
     years <- ind_pops |>
       group_by(year) |>
-      summarise(num_dg_meeting_reqs = sum(diversity_group_meets_req)) |>
+      summarise(num_dg_meeting_reqs = sum(diversity_group_meets_req)) |> glimpse()
       filter(num_dg_meeting_reqs > 2) |>
       pull(year)
     two_dg_recovered <- min(years)
