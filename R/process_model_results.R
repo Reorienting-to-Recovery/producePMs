@@ -135,26 +135,42 @@ create_model_results_dataframe <- function(model_results, model_parameters, scen
            size_or_age = as.character(return_sim_year - sim_year),
            run = selected_run) |> glimpse()
 
-  # TODO fix for shiny
-  harvest <- model_results$returning_adults |>
-    transmute(performance_metric = "Adult Age of Return",
-              scenario = scenario_name,
-              value = return_total,
-              location = watershed,
-              origin = origin,
-              year = return_sim_year,
-              size_or_age = as.character(return_sim_year - sim_year),
-              run = selected_run) |>
-    filter(year > 5, year <= 20 ) |>
-    group_by(location, year, scenario) |>
-    summarise(river_toals = sum(value, na.rm = TRUE),
-              nums_above_target = ifelse(river_toals - 500 < 0, 0, river_toals - 500)) |>
-    transmute(performance_metric = "12 Harvest: Adults above biological objective numbers",
-              scenario = scenario,
-              value = nums_above_target,
-              location = location,
-              year = year,
-              run = selected_run) |> glimpse()
+  # Harvest
+  total_released <- fallRunDSM::fall_hatchery_release |> rowSums() |> sum()
+  total_released
+  # assume only 1% of net pen fish are harvested throughout lifetime
+  # (consistent with/very low end of CFM_CWT_report studies, year 3 captures much higher)
+  # https://www.calfish.org/Portals/2/Programs/CentralValley/CFM/docs/2019_CFM_CWT_Report.pdfv
+  harvestable_ocean_terminal_hatcheries <- total_released * .01
+  harvestable_ocean_terminal_hatcheries
+  # how much harvest is in river vs ocean in the model
+  # Total harvest
+  total_harvest <- fallRunDSM::r2r_adult_harvest_rate |> sum()
+
+  # 17 tribs allow in river harvest each of these allows it at .8 percent
+  in_river_harvest_percentace <- (.08 * 17) / total_harvest
+
+  ocean_harvest <- model_results$harvested_adults |>
+    rowwise() |>
+    mutate(scenario = scenario_name,
+           run = selected_run,
+           location = "Ocean",
+           performance_metric = "12.2: Total ocean harvest",
+           harvest = total_harvest * (1 - in_river_harvest_percentace),
+           value = ifelse(model_parameters$terminal_hatchery_logic,
+                          harvest + harvestable_ocean_terminal_hatcheries, harvest)) |>
+    select(-hatchery_harvest, -natural_harvest, -total_harvest, -harvest) |> glimpse()
+
+  river_harvest <- model_results$harvested_adults |>
+    rowwise() |>
+    mutate(scenario = scenario_name,
+           run = selected_run,
+           location = "River",
+           performance_metric = "12.1: Total river harvest",
+           value = total_harvest * in_river_harvest_percentace) |>
+    select(-hatchery_harvest, -natural_harvest, -total_harvest) |> glimpse()
+
+  total_harvest_df <- bind_rows(ocean_harvest, river_harvest)
 
 
   juveniles <- model_results$juveniles_at_chipps |>
@@ -167,7 +183,7 @@ create_model_results_dataframe <- function(model_results, model_parameters, scen
            scenario = scenario_name,
            run = selected_run) |> glimpse()
 
-  full_results <- bind_rows(result_dataframe, adults_age, juveniles, harvest)
+  full_results <- bind_rows(result_dataframe, adults_age, juveniles, total_harvest_df)
 
   return(full_results)
 }

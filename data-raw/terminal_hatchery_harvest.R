@@ -25,6 +25,51 @@ baseline_harvest_river <- mean(baseline_harvest$total_harvest * in_river_harvest
 baseline_harvest_ocean <- mean(baseline_harvest$total_harvest * (1 - in_river_harvest_percentace))
 number_years_dont_meet <- (baseline_harvest$total_harvest * in_river_harvest_percentace) + (baseline_harvest$total_harvest * (1 - in_river_harvest_percentace))
 sum(number_years_dont_meet[6:20] > 250000)
+
+harvest_pm <- function() {
+ # Terminal Hatchery Analysis
+  total_released <- fallRunDSM::fall_hatchery_release |> rowSums() |> sum()
+  total_released
+  # assume only 1% of net pen fish are harvested throughout lifetime
+  # (consistent with/very low end of CFM_CWT_report studies, year 3 captures much higher)
+  # https://www.calfish.org/Portals/2/Programs/CentralValley/CFM/docs/2019_CFM_CWT_Report.pdfv
+  harvestable_ocean_terminal_hatcheries <- total_released * .01
+  harvestable_ocean_terminal_hatcheries
+  # how much harvest is in river vs ocean in the model
+  # Total harvest
+  total_harvest_rate <- fallRunDSM::r2r_adult_harvest_rate |> sum()
+
+  # 17 tribs allow in river harvest each of these allows it at .8 percent
+  in_river_harvest_percentace <- (.08 * 17) / total_harvest_rate
+  model_results <- baseline_model_results
+  selected_scenario <- "Baseline"
+  selected_run <- "fall"
+  model_parameters <- r_to_r_baseline_params
+
+  ocean_harvest <- model_results$harvested_adults |>
+    rowwise() |>
+    mutate(scenario = selected_scenario,
+           run = selected_run,
+           location = "Ocean",
+           performance_metric = "12.2: Total ocean harvest",
+           harvest = total_harvest * (1 - in_river_harvest_percentace),
+           value = ifelse(model_parameters$terminal_hatchery_logic,
+                            harvest + harvestable_ocean_terminal_hatcheries, harvest)) |>
+    select(-hatchery_harvest, -natural_harvest, -total_harvest, -harvest) |> glimpse()
+
+  river_harvest <- model_results$harvested_adults |>
+    rowwise() |>
+    mutate(scenario = selected_scenario,
+           run = selected_run,
+           location = "River",
+           performance_metric = "12.2: Total river harvest",
+           value = total_harvest * in_river_harvest_percentace) |>
+    select(-hatchery_harvest, -natural_harvest, -total_harvest) |> glimpse()
+
+  total_harvest_df <- bind_rows(ocean_harvest, river_harvest)
+
+  return(total_harvest_df)
+}
 # KITCHEN SINK
 kitchen_sink_harvest <- kitchen_sink_results$harvested_adults
 # All natural harvest is in river so that would all be sport harvest
