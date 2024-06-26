@@ -202,36 +202,35 @@ ggplot() +
 ggsave("data-raw/figures/hydrology.png")
 
 
-# just abundance
-ggplot() +
-  # geom_area(data = flow_data, aes(x = date, y = flow_cfs, fill = Hydrology), alpha = .5, position = "identity") +
-  # geom_col(data = flow_data, aes(x = date, y = -4000, fill = year_type), alpha = 1, width = 31) +
-  # scale_fill_manual(values = muted,
-                    # limits = c("Run of River", "Biop (Baseline)")
-                    #  limits = c('Critical', 'Dry', 'Below Normal', 'Above Normal', 'Wet')
-  # ) +
-  # geom_line(data = flow_data, aes(x = date, y = flow_cfs), color = "black", linewidth = .1) +
-  geom_line(data = flow_spawn_plot_data, aes(x = date, y = value, color = scenario),linewidth = .5, alpha = 1) +
+# doubling goal plot
+doubling_goal <- sum(3300, 9300, 2200, 38000, 22000, 18000, 170000, 66000, 450,
+                     160000, 258700, 720, 4200, 1500, 1500, 800)
+all_res |>
+  filter(performance_metric == "1 All Spawners",
+         !scenario %in% c("Planned Plus", "Dry Year with Projects"),
+         !location %in% c("Stoney Creek", "Thomes Creek")) |>
+  group_by(year, scenario, run) |>
+  summarize(value = sum(value, na.rm = TRUE)) |>
+  left_join(year_lookup) |>
+  mutate(date = as.Date(paste0(actual_year, "-12-31"))) |>
+  ggplot() +
+  geom_line(aes(x = date, y = value, color = scenario),linewidth = .5, alpha = 1) +
   scale_color_manual(values = scenario_six_colors) +
-  # geom_line(data = flow_spawn_plot_data |> filter(scenario == "Baseline"), aes(x = date, y = value), color = "black", linewidth = .5, alpha = 1) +
   scale_y_continuous(labels = scales::comma) +
   labs(title = "Total Spawner Abundance over Time",
        y = "Spawner Abundance",
        x = "Year",
-       color = "Blended Scenario",
-       fill = "Hydrology",
-      #  caption = "Note: These numbers only reflect Upper Sacramento River Fall Run Chinook Spawners. Baseline and No Hatchery perform very simmilarly in the Upper Sacramento River."
-       ) +
+       color = "Blended Scenario" ) +
+  geom_hline(yintercept = doubling_goal, linetype = "dashed") +
   theme_minimal() +
   theme(
     plot.caption = element_text(hjust = 0, face = "italic"),# move caption to the left
     legend.position = "bottom",
-    # legend.position = "none",
     axis.text = element_text(size = 15),
     axis.title = element_text(size = 20),
     plot.title = element_text(size = 20)
   )
-ggsave("data-raw/figures/spawner_abundance_plot.png")
+ggsave("data-raw/figures/doubling_goal.png")
 
 # flow_spawn_plot_data <- all_res |>
 #   filter(performance_metric == "1 All Spawners",

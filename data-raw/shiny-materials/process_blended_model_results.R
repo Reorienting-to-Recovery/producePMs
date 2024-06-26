@@ -102,6 +102,8 @@ fall_run_r_to_r_planned_and_current_inputs <- create_model_inputs_tidy_df(model_
                                                                 "Planned Plus", selected_run = "fall")
 
 # Add inputs for storage and deliveries from calsim nodes not within model parameters
+# Files for generating the create calsim non cvia are in data raw
+# Function will need to be updates if new CalSim data becomes avaliable
 calsim_inputs <- create_calsim_non_cvpia_nodes_tidy() |>
   mutate(year = as.character(year))
 

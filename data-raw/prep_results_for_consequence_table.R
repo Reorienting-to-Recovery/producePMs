@@ -95,8 +95,6 @@ produce_shannon_div_ind_size_and_timing_pm(all_res) |>
   arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |> View()
 
 # 5.4 #
-# TODO deal with this one
-
 produce_floodplain_over_inchannel_habitat(fall_baseline_results, r_to_r_baseline_params, "fall", "Baseline")
 produce_floodplain_over_inchannel_habitat(fall_run_dy_results, r_to_r_dry_years_params, "fall", "Dry Year")
 produce_floodplain_over_inchannel_habitat(fall_run_hh_results, r_to_r_habitat_and_hatchery_params, "fall", "Habitat and Hatchery")
@@ -172,6 +170,7 @@ bind_rows(produce_wetted_acre_day_floodplain_activation_pm(r_to_r_baseline_param
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
 # 9.2 #
+
 # Functional Flow Metric
 # TODO
 
@@ -188,8 +187,6 @@ bind_rows(produce_2yr_30d_floodplain_acres_pm(r_to_r_baseline_params, scenario =
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
 ### Access and Economics ### ---------------------------------------------------
-###
-# TODO confirm how we want to do functional flow vs baseline
 
 upper_sac_flow_eff <- DSMflow::flows_cfs$eff_sac |>
   filter(year(date) > 1979, year(date) < 2000) |>
@@ -279,6 +276,8 @@ produce_percent_harvestable_abv_threshold_pm(fall_run_ks_results, selected_scena
 
 # 13.1 #
 # Water supply and delivery	Annual acre ft of water divertible water for agriculture (average for wetter years and drier years)
+# # Only works for ones we have calsim runs for
+
 all_inputs |>
   filter(performance_metric == "13.1 Agricultural Water Supply and Delivery") |>
   group_by(scenario, year) |>
@@ -288,6 +287,8 @@ all_inputs |>
 
 # 13.2 #
 # Annual acre ft of water divertible water for municipalities (average for wetter years and drier years)
+# # Only works for ones we have calsim runs for
+
 all_inputs |>
   filter(performance_metric == "13.2 Municipal Water Supply and Delivery") |>
   group_by(scenario, year) |>
@@ -296,8 +297,7 @@ all_inputs |>
   summarise(avg_annual_del = mean(total_deliveries_to_mni, na.rm = TRUE)/1000) # convert to TAF
 # 14 #
 # Acres in ag production
-# TODO?
-# Maddee and Alison are working on this
+# constructed scale to do manually
 
 ### Regulatory and Public Health ### -------------------------------------------
 
@@ -364,7 +364,6 @@ ifelse(data$dry_eff_percent_of_nat_flows > 1, 1, data$dry_eff_percent_of_nat_flo
 
 # 17 #
 # Flood frequency and stage for each watershed
-# TODO check assumptions with Mark
 produce_flood_frequency_and_stage_pm(r_to_r_baseline_params, scenario = "Baseline", selected_run = "fall")
 bind_rows(produce_flood_frequency_and_stage_pm(r_to_r_baseline_params, scenario = "Baseline", selected_run = "fall"),
           produce_flood_frequency_and_stage_pm(r_to_r_kitchen_sink_params, scenario = "Kitchen Sink", selected_run = "fall"),
@@ -375,8 +374,10 @@ bind_rows(produce_flood_frequency_and_stage_pm(r_to_r_baseline_params, scenario 
   arrange(factor(scenario, levels = c("Baseline", "Dry Years", "Habitat and Hatchery", "Kitchen Sink", "Planned Plus"))) |>
   pivot_longer(3:5, names_to = "type", values_to = "value") |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
+
 # 18 #
 # Hydropower generation ability
+# Only works for ones we have calsim runs for
 all_inputs |>
   filter(performance_metric == "18 Hydropower Generation: Difference in Potential Power Produnction From Baseline") |> glimpse()
   group_by(scenario, year) |>
