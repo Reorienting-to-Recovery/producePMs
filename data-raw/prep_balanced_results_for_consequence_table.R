@@ -104,6 +104,7 @@ produce_marine_nutrient_pm(all_res) |>
 # 7 #
 # # time to recovery
 produce_time_to_recovery_pm(fall_baseline_results, selected_run = "fr")
+produce_time_to_recovery_pm(fall_run_platypus_results)
 produce_time_to_recovery_pm(fall_run_dy_results)
 produce_time_to_recovery_pm(fall_run_hh_results)
 produce_time_to_recovery_pm(fall_run_ks_results)
@@ -115,14 +116,15 @@ produce_time_to_recovery_pm(fall_run_pc_results)
 # TODO get purrr logic working here to simplify
 inputs <- list(params_list, scenarios_lists, run_list)
 purrr::map(params_list, produce_juvenile_wetted_acre_day_pm, scenarios_lists, run_list)
+
+r_to_r_platypus_params <- load_scenario(R2Rscenario::scenarios$balanced_scenarios$platypus,
+                                        species = "fr")
 # 8.1 #
 # Wetted acre days of suitable juvenile rearing habitat
 bind_rows(produce_juvenile_wetted_acre_day_pm(r_to_r_baseline_params, scenario = "Baseline", selected_run = "fall"),
-produce_juvenile_wetted_acre_day_pm(r_to_r_dry_years_params, scenario = "Dry Years", selected_run = "fall"),
-produce_juvenile_wetted_acre_day_pm(r_to_r_habitat_and_hatchery_params, scenario = "Habitat and Hatchery", selected_run = "fall"),
-produce_juvenile_wetted_acre_day_pm(r_to_r_kitchen_sink_params, scenario = "Kitchen Sink", selected_run = "fall"),
-produce_juvenile_wetted_acre_day_pm(r_to_r_planned_and_current, scenario = "Planned Plus", selected_run = "fall")) |>
-  arrange(factor(scenario, levels = c("Baseline", "Dry Years", "Habitat and Hatchery", "Kitchen Sink"))) |>
+          produce_juvenile_wetted_acre_day_pm(r_to_r_platypus_params,
+                                              scenario = "Platypus", selected_run = "fall")) |>
+  arrange(factor(scenario, levels = c("Baseline", "Platypus"))) |>
   pivot_longer(3:5, names_to = "type", values_to = "value") |>
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
@@ -132,11 +134,8 @@ produce_juvenile_wetted_acre_day_pm(r_to_r_planned_and_current, scenario = "Plan
 # Wetted acre days of suitable spawning habitat
 produce_spawning_wetted_acre_day_pm(model_params, scenario = "Baseline", selected_run = "fall")
 bind_rows(produce_spawning_wetted_acre_day_pm(r_to_r_baseline_params, scenario = "Baseline", selected_run = "fall"),
-          produce_spawning_wetted_acre_day_pm(r_to_r_dry_years_params, scenario = "Dry Years", selected_run = "fall"),
-          produce_spawning_wetted_acre_day_pm(r_to_r_habitat_and_hatchery_params, scenario = "Habitat and Hatchery", selected_run = "fall"),
-          produce_spawning_wetted_acre_day_pm(r_to_r_kitchen_sink_params, scenario = "Kitchen Sink", selected_run = "fall"),
-          produce_spawning_wetted_acre_day_pm(r_to_r_planned_and_current, scenario = "Planned Plus", selected_run = "fall")) |>
-  arrange(factor(scenario, levels = c("Baseline", "Dry Years", "Habitat and Hatchery", "Kitchen Sink"))) |>
+          produce_spawning_wetted_acre_day_pm(r_to_r_platypus_params, scenario = "Platypus", selected_run = "fall")) |>
+  arrange(factor(scenario, levels = c("Baseline", "Platypus"))) |>
   pivot_longer(3:5, names_to = "type", values_to = "value") |>
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
@@ -146,20 +145,14 @@ bind_rows(produce_spawning_wetted_acre_day_pm(r_to_r_baseline_params, scenario =
 # STILL NOT WORKING - get values from EManuel and try and understand why it is so high here
 
 bind_rows(total_habitat_decay(r_to_r_baseline_params, scenario = "Baseline", "fall"),
-          total_habitat_decay(r_to_r_dry_years_params, scenario = "Dry Years", "fall"),
-          total_habitat_decay(r_to_r_habitat_and_hatchery_params, scenario = "Habitat and Hatchery", "fall"),
-          total_habitat_decay(r_to_r_kitchen_sink_params, scenario = "Kitchen Sink", "fall"),
-          total_habitat_decay(r_to_r_planned_and_current, scenario = "Planned Plus", "fall"),) |>
-  arrange(factor(scenario, levels = c("Baseline", "Dry Years", "Habitat and Hatchery", "Kitchen Sink"))) |> View()
+          total_habitat_decay(r_to_r_platypus_params, scenario = "Platypus", "fall")) |>
+  arrange(factor(scenario, levels = c("Baseline", "Platypus"))) |> View()
 # 9.1
 # Wetted acre days - total days floodplain activation occurs
 produce_wetted_acre_day_floodplain_activation_pm(r_to_r_baseline_params, scenario = "Baseline", selected_run = "fall")
 bind_rows(produce_wetted_acre_day_floodplain_activation_pm(r_to_r_baseline_params, scenario = "Baseline", selected_run = "fall"),
-          produce_wetted_acre_day_floodplain_activation_pm(r_to_r_dry_years_params, scenario = "Dry Years", selected_run = "fall"),
-          produce_wetted_acre_day_floodplain_activation_pm(r_to_r_habitat_and_hatchery_params, scenario =  "Habitat and Hatchery", selected_run = "fall"),
-          produce_wetted_acre_day_floodplain_activation_pm(r_to_r_kitchen_sink_params, scenario =  "Kitchen Sink", selected_run = "fall"),
-            produce_wetted_acre_day_floodplain_activation_pm(r_to_r_planned_and_current, scenario =  "Planned Plus", selected_run = "fall")) |>
-  arrange(factor(scenario, levels = c("Baseline", "Dry Years", "Habitat and Hatchery", "Kitchen Sink"))) |>
+          produce_wetted_acre_day_floodplain_activation_pm(r_to_r_platypus_params, scenario = "Platypus", selected_run = "fall")) |>
+  arrange(factor(scenario, levels = c("Baseline", "Platypus"))) |>
   pivot_longer(3:5, names_to = "type", values_to = "value") |>
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
@@ -233,6 +226,7 @@ mean(flow_change$us_eff)
 
 # 11 #
 # Managed wetlands
+# TODO
 all_inputs |>
   filter(performance_metric == "11 Managed Wetlands: Refuge Water Supply and Delivery") |>
   group_by(scenario) |>
@@ -244,7 +238,7 @@ all_inputs |>
 # Annual number of adults in rivers
 # (above abundance numbers required to meet biological objectives)
 produce_spawner_abundance_above_biological_objective_river_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline", "Dry Year", "Habitat and Hatchery", "Kitchen Sink"))) |>
+  arrange(factor(scenario, levels = c("Baseline", "Platypus"))) |>
   pivot_longer(2:4, names_to = "type", values_to = "value") |>
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()

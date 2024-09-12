@@ -9,6 +9,9 @@ library(producePMs)
 library(tidyverse)
 library(R2Rscenario)
 
+remotes::install_github("Reorienting-to-Recovery/fallRunDSM@wip", force = TRUE)
+remotes::install_github("Reorienting-to-Recovery/R2Rscenarios", force = TRUE)
+
 # Run all with updated movement hypo weights
 new_params_baseline <- fallRunDSM::r_to_r_baseline_params
 new_params_baseline$movement_hypo_weights <- c(1, rep(0, 7))
@@ -20,7 +23,8 @@ baseline_seeds <- fallRunDSM::fall_run_model(mode = "seed",
                                              ..params = new_params_baseline,
                                              seeds = fallRunDSM::adult_seeds)
 
-baseline_model_results <- fallRunDSM::fall_run_model(mode = "simulate", ..params = new_params_baseline,
+baseline_model_results <- fallRunDSM::fall_run_model(mode = "simulate",
+                                                     ..params = new_params_baseline,
                                                      seeds = baseline_seeds,
                                                      delta_surv_inflation = FALSE)
 
@@ -38,11 +42,11 @@ platypus_results <- fallRunDSM::fall_run_model(mode = "simulate",
 #                                                delta_surv_inflation = TRUE)
 #
 # TODO not ready yet
-# tortoise_results <- fallRunDSM::fall_run_model(mode = "simulate",
-#                                                scenario = "tortoise",
-#                                                ..params = new_params_baseline,
-#                                                seeds = baseline_seeds,
-#                                                delta_surv_inflation = TRUE)
+tortoise_results <- fallRunDSM::fall_run_model(mode = "simulate",
+                                               scenario = "tortoise",
+                                               ..params = new_params_baseline,
+                                               seeds = baseline_seeds,
+                                               delta_surv_inflation = TRUE)
 # CREATE RESULT DFS ------------------------------------------------------------
 fall_baseline_results <- create_model_results_dataframe(baseline_model_results,
                                                         model_parameters = fallRunDSM::r_to_r_baseline_params,
@@ -54,9 +58,14 @@ fall_run_platypus_results <- create_model_results_dataframe(platypus_results,
                                                                                              species = "fr"),
                                                             "Platypus", selected_run = "fall")
 
+fall_run_tortoise_results <- create_model_results_dataframe(platypus_results,
+                                                            model_parameters = load_scenario(R2Rscenario::scenarios$balanced_scenarios$tortoise,
+                                                                                             species = "fr"),
+                                                            "Tortoise", selected_run = "fall")
 
 
-all_res <- bind_rows(fall_baseline_results, fall_run_platypus_results)
+
+all_res <- bind_rows(fall_baseline_results, fall_run_platypus_results, fall_run_tortoise_results)
 
 write_csv(all_res, paste0("data-raw/shiny-materials/fall_blended_results_", Sys.Date(), ".csv"))
 
@@ -66,19 +75,22 @@ write_csv(all_res, paste0("data-raw/shiny-materials/fall_blended_results_", Sys.
 fall_baseline_inputs <- create_model_inputs_tidy_df(model_parameters = fallRunDSM::r_to_r_baseline_params,
                                                     "Baseline", selected_run = "fall")
 # TODO debug
-# fall_run_platypus_inputs <- create_model_inputs_tidy_df(model_parameters = load_scenario(R2Rscenario::scenarios$balanced_scenarios$platypus,
-#                                                                                              species = "fr"),
-#                                                             "Platypus", selected_run = "fall")
+fall_run_platypus_inputs <- create_model_inputs_tidy_df(model_parameters = load_scenario(R2Rscenario::scenarios$balanced_scenarios$platypus,
+                                                                                             species = "fr"),
+                                                            "Platypus", selected_run = "fall")
+
+fall_run_tortoise_inputs <- create_model_inputs_tidy_df(model_parameters = load_scenario(R2Rscenario::scenarios$balanced_scenarios$tortoise,
+                                                                                         species = "fr"),
+                                                        "Tortoise", selected_run = "fall")
 
 # Add inputs for storage and deliveries from calsim nodes not within model parameters
 # Files for generating the create calsim non cvia are in data raw
 # Function will need to be updates if new CalSim data becomes avaliable
-# calsim_inputs <- create_calsim_non_cvpia_nodes_tidy() |>
-#   mutate(year = as.character(year))
-#
-#
-# all_inputs <- bind_rows(fall_baseline_inputs, fall_run_kitchen_sink_inputs, fall_run_dry_year_inputs, fall_run_dry_year_inputs_with_projects,
-#                         fall_run_hab_and_hatchery_inputs, fall_run_r_to_r_planned_and_current_inputs, calsim_inputs)
-#
-# write_csv(all_inputs, "data-raw/shiny-materials/fall_blended_inputs_april_2024.csv")
-#
+calsim_inputs <- create_calsim_non_cvpia_nodes_tidy() |>
+  mutate(year = as.character(year))
+
+
+all_inputs <- bind_rows(fall_baseline_inputs, fall_run_platypus_inputs, calsim_inputs)
+
+write_csv(all_inputs, paste0("data-raw/shiny-materials/fall_balanced_inputs_", Sys.Date(), ".csv"))
+
