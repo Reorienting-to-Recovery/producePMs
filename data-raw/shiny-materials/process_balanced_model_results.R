@@ -58,7 +58,7 @@ fall_run_platypus_results <- create_model_results_dataframe(platypus_results,
                                                                                              species = "fr"),
                                                             "Platypus", selected_run = "fall")
 
-fall_run_tortoise_results <- create_model_results_dataframe(platypus_results,
+fall_run_tortoise_results <- create_model_results_dataframe(tortoise_results,
                                                             model_parameters = load_scenario(R2Rscenario::scenarios$balanced_scenarios$tortoise,
                                                                                              species = "fr"),
                                                             "Tortoise", selected_run = "fall")
@@ -90,7 +90,7 @@ calsim_inputs <- create_calsim_non_cvpia_nodes_tidy() |>
   mutate(year = as.character(year))
 
 
-all_inputs <- bind_rows(fall_baseline_inputs, fall_run_platypus_inputs, calsim_inputs)
+all_inputs <- bind_rows(fall_baseline_inputs, fall_run_platypus_inputs, fall_run_tortoise_inputs, calsim_inputs)
 
 write_csv(all_inputs, paste0("data-raw/shiny-materials/fall_balanced_inputs_", Sys.Date(), ".csv"))
 
