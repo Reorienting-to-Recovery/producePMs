@@ -28,7 +28,7 @@ r_to_r_elephant_params <- load_scenario(R2Rscenario::scenarios$balanced_scenario
 # 1 #
 #
 produce_spawner_abundance_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline", "Platypus", "Tortoise", "Elephant"))) |>
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |>
   pivot_longer(2:4, names_to = "type", values_to = "value") |>
   pivot_wider(names_from = scenario, values_from = value) |>
   mutate_if(is.numeric, pretty_num) |> View()
@@ -42,7 +42,7 @@ produce_spawner_abundance_pm(all_res) |>
 
 # redo with geometric mean
 produce_crr_geometric_mean_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline", "Platypus", "Tortoise", "Elephant"))) |>
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |>
   pivot_longer(2:4, names_to = "type", values_to = "value") |>
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
@@ -50,7 +50,7 @@ produce_crr_geometric_mean_pm(all_res) |>
 # 2.2 #
 # Average growth rate central valley wide
 produce_growth_rate_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline", "Platypus", "Tortoise", "Elephant"))) |>
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |>
   pivot_longer(2:4, names_to = "type", values_to = "value") |>
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
@@ -58,26 +58,26 @@ produce_growth_rate_pm(all_res) |>
 # 3.1 #
 # Number of independent pops
 produce_independent_pops_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline", "Platypus", "Tortoise", "Elephant"))) |> View()
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |> View()
 
 # 3.1.1
 produce_populations_present_pm(all_res)
 # 3.2 #
 # of potential independent viable populations in each diversity group per ESU/run
 produce_independent_pops_per_diversity_group_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline", "Platypus", "Tortoise", "Elephant"))) |> View()
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |> View()
 
 # LOoks like now this is total independent / possible ind (looks like possible ind 20 tribs * 16 years (only possible to meet criteria in 16 years)) so 320
 
 # 3.3 #
 # number dependent pops
 produce_dependent_pops_per_diversity_group_pm(all_res, selected_run = "fall") |>
-  arrange(factor(scenario, levels = c("Baseline", "Platypus", "Tortoise", "Elephant"))) |> View()
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |> View()
 
 # 4 #
 # PHOS
 produce_phos_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline", "Platypus", "Tortoise", "Elephant"))) |>
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |>
   pivot_longer(3:5, names_to = "type", values_to = "value") |>
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
@@ -85,25 +85,28 @@ produce_phos_pm(all_res) |>
 # 5.1 #
 # Age distribution of spawning adults
 produce_categorical_return_age_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline", "Platypus", "Tortoise", "Elephant"))) |> View()
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |> View()
 
 # 5.2 #
 # shannon diversity index
 produce_shannon_div_ind_size_pm(all_res) |>
   mutate_if(is.numeric, pretty_num) |>
-  arrange(factor(scenario, levels = c("Baseline", "Platypus", "Tortoise", "Elephant"))) |> View()
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |> View()
 
 # 5.3 #
 # size distribution & month of juveniles
 produce_shannon_div_ind_size_and_timing_pm(all_res) |>
   mutate_if(is.numeric, pretty_num) |>
-  arrange(factor(scenario, levels = c("Baseline", "Platypus", "Tortoise", "Elephant"))) |> View()
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |> View()
 
 # 5.4 #
-produce_floodplain_over_inchannel_habitat(fall_baseline_results, r_to_r_baseline_params, "fall", "Baseline")
-produce_floodplain_over_inchannel_habitat(fall_run_platypus_inputs, r_to_r_platypus_params, "fall", "Platypus")
-produce_floodplain_over_inchannel_habitat(fall_run_tortoise_results, r_to_r_tortoise_params, "fall", "Tortoise")
-produce_floodplain_over_inchannel_habitat(fall_run_elephant_results, r_to_r_elephant_params, "fall", "Elephant")
+produce_floodplain_over_inchannel_habitat(fall_baseline_results, r_to_r_baseline_params, "fall", "Baseline") |>
+  bind_rows(produce_floodplain_over_inchannel_habitat(fall_run_platypus_inputs, r_to_r_platypus_params, "fall", "Platypus"),
+            produce_floodplain_over_inchannel_habitat(fall_run_tortoise_results, r_to_r_tortoise_params, "fall", "Tortoise"),
+            produce_floodplain_over_inchannel_habitat(fall_run_elephant_results, r_to_r_elephant_params, "fall", "Elephant")) |>
+  arrange(factor(scenario, levels = c("Baseline", "Tortoise", "Platypus", "Elephant"))) |>
+  pivot_longer(2:4, names_to = "type", values_to = "value") |>
+  pivot_wider(names_from = scenario, values_from = value) |> View()
 produce_floodplain_over_inchannel_habitat(fall_run_dy_results, r_to_r_dry_years_params, "fall", "Dry Year")
 produce_floodplain_over_inchannel_habitat(fall_run_hh_results, r_to_r_habitat_and_hatchery_params, "fall", "Habitat and Hatchery")
 produce_floodplain_over_inchannel_habitat(fall_run_ks_results, r_to_r_kitchen_sink_params, "fall", "Kitchen Sink")
@@ -113,7 +116,7 @@ produce_floodplain_over_inchannel_habitat(fall_run_pc_results, r_to_r_planned_an
 # marine derived nutrient
 produce_marine_nutrient_pm(all_res) |>
   mutate_if(is.numeric, pretty_num) |>
-  arrange(factor(scenario, levels = c("Baseline", "Platypus", "Tortoise", "Elephant"))) |> View()
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |> View()
 
 # 7 #
 # # time to recovery
@@ -155,7 +158,7 @@ bind_rows(produce_spawning_wetted_acre_day_pm(r_to_r_baseline_params, scenario =
           produce_spawning_wetted_acre_day_pm(r_to_r_platypus_params, scenario = "Platypus", selected_run = "fall"),
           produce_spawning_wetted_acre_day_pm(r_to_r_tortoise_params, scenario = "Tortoise", selected_run = "fall"),
           produce_spawning_wetted_acre_day_pm(r_to_r_elephant_params, scenario = "Elephant", selected_run = "fall")) |>
-  arrange(factor(scenario, levels = c("Baseline", "Platypus", "Tortoise", "Elephant"))) |>
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |>
   pivot_longer(3:5, names_to = "type", values_to = "value") |>
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
@@ -168,7 +171,7 @@ bind_rows(total_habitat_decay(r_to_r_baseline_params, scenario = "Baseline", "fa
           total_habitat_decay(r_to_r_platypus_params, scenario = "Platypus", "fall"),
           total_habitat_decay(r_to_r_tortoise_params, scenario = "Tortoise", "fall"),
           total_habitat_decay(r_to_r_elephant_params, scenario = "Elephant", "fall")) |>
-  arrange(factor(scenario, levels = c("Baseline", "Platypus", "Tortoise", "Elephant"))) |> View()
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |> View()
 # 9.1
 # Wetted acre days - total days floodplain activation occurs
 produce_wetted_acre_day_floodplain_activation_pm(r_to_r_baseline_params, scenario = "Baseline", selected_run = "fall")
@@ -176,7 +179,7 @@ bind_rows(produce_wetted_acre_day_floodplain_activation_pm(r_to_r_baseline_param
           produce_wetted_acre_day_floodplain_activation_pm(r_to_r_platypus_params, scenario = "Platypus", selected_run = "fall"),
           produce_wetted_acre_day_floodplain_activation_pm(r_to_r_tortoise_params, scenario = "Tortoise", selected_run = "fall"),
           produce_wetted_acre_day_floodplain_activation_pm(r_to_r_elephant_params, scenario = "Elephant", selected_run = "fall")) |>
-  arrange(factor(scenario, levels = c("Baseline", "Platypus", "Tortoise", "Elephant"))) |>
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |>
   pivot_longer(3:5, names_to = "type", values_to = "value") |>
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
@@ -192,7 +195,7 @@ bind_rows(produce_2yr_30d_floodplain_acres_pm(r_to_r_baseline_params, scenario =
           produce_2yr_30d_floodplain_acres_pm(r_to_r_platypus_params, scenario = "Platypus", selected_run = "fall"),
           produce_2yr_30d_floodplain_acres_pm(r_to_r_tortoise_params, scenario = "Tortoise", selected_run = "fall"),
           produce_2yr_30d_floodplain_acres_pm(r_to_r_elephant_params, scenario = "Elephant", selected_run = "fall")) |>
-  arrange(factor(scenario, levels = c("Baseline", "Platypus", "Tortoise", "Elephant"))) |>
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |>
   pivot_longer(3, names_to = "type", values_to = "value") |>
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
@@ -200,31 +203,37 @@ bind_rows(produce_2yr_30d_floodplain_acres_pm(r_to_r_baseline_params, scenario =
 
 upper_sac_flow_eff <- DSMflow::flows_cfs$eff_sac |>
   filter(year(date) > 1979, year(date) < 2000) |>
-  select(date, us_eff = `Upper Sacramento River`)
+  select(date, us_eff = `Upper Sacramento River`,
+         sj_eff = `San Joaquin River`)
 
 upper_sac_flow_biop <- DSMflow::flows_cfs$biop_itp_2018_2019 |>
   filter(year(date) > 1979, year(date) < 2000) |>
-  select(date, us = `Upper Sacramento River`)
+  select(date, us = `Upper Sacramento River`,
+         sj = `San Joaquin River`)
 
-upper_sac_flow_LTO_12a <- DSMflow::flows_cfs$LTO_12a |>
-  filter(year(date) > 1979, year(date) > 2000) |>
-  select(date, us_lto_12a = `Upper Sacramento River`)
+# for LTO we will pull in actual numbers
 
-acre_feet <- left_join(upper_sac_flow_eff, upper_sac_flow_biop, upper_sac_flow_LTO_12a) |>
+acre_feet <- left_join(upper_sac_flow_eff, upper_sac_flow_biop) |>
   mutate(us_af = us * 60.370,
          us_eff_af = us_eff * 60.370,
-         us_lto_12a_af = us_lto_12a * 60.370) |>
+         sj_af = sj * 60.370,
+         sj_eff_af = sj_eff * 60.370) |>
   group_by(year = year(date)) |>
   summarise(us = sum(us_af),
             us_eff = sum(us_eff_af),
-            us_lto_12a = sum(us_lto_12a_af)) |>
-  mutate(acre_ft_change = us_eff - us,
-         acre_ft_change_lto_12a = us_lto_12a - us)
+            sj = sum(sj_af),
+            sj_eff = sum(sj_eff_af)) |>
+  mutate(us_acre_ft_change = us_eff - us,
+         sj_acre_ft_change = sj_eff - sj)
 
-mean_af_change <-  acre_feet |>
-  # TODO add lto_12a
-  pull(acre_ft_change) |> mean()
-mean_af_change/1000
+# result ks
+us_mean_af_change <-  acre_feet |>
+  pull(us_acre_ft_change) |> mean()
+us_mean_af_change/1000
+
+sj_mean_af_change <-  acre_feet |>
+  pull(sj_acre_ft_change) |> mean()
+sj_mean_af_change/1000
 
 water_year_types <- waterYearType::water_year_indices |>
   filter(location == "Sacramento Valley", WY %in% c(1922:2003)) |>
@@ -235,26 +244,19 @@ new_year_types <- water_year_types |>
                             "Dry", "Wet")) |>
   select(year, year_type)
 
-acre_feet |>
+# ks tortoise (dry year)
+dry_year_acre_feet <- acre_feet |>
   left_join(new_year_types) |>
-  mutate(acre_ft_change = ifelse(year_type == "Dry", acre_ft_change, 0)) |>
-  # TODO add lto_12a
-  pull(acre_ft_change) |> mean() / 1000
+  mutate(us_acre_ft_change = ifelse(year_type == "Dry", us_acre_ft_change, 0),
+         sj_acre_ft_change = ifelse(year_type == "Dry", sj_acre_ft_change, 0))
 
-flow_change <- left_join(upper_sac_flow_eff, upper_sac_flow_biop,
-                         upper_sac_flow_LTO_12a) |>
-  mutate(us_af = us,
-         us_eff_af = us_eff,
-         us_lto_12a_af = us_lto_12a) |>
-  group_by(year = year(date)) |>
-  summarise(us = sum(us_af),
-            us_eff = sum(us_eff_af),
-            us_lto_12a = sum(us_lto_12a_af)) |>
-  # TODO add 12a
-  mutate(flow_change = us_eff - us) |> glimpse()
+dry_year_acre_feet |>
+  pull(us_acre_ft_change) |> mean() / 1000
+dry_year_acre_feet |>
+  pull(sj_acre_ft_change) |> mean() / 1000
 
-mean(flow_change$us)
-mean(flow_change$us_eff)
+# to get municipal vs ag vs wetlands, use proportion of total acre feet
+# TODO
 
 # 10#
 # Land/water access – Indigenous/cultural
@@ -274,13 +276,13 @@ all_inputs |>
 # Annual number of adults in rivers
 # (above abundance numbers required to meet biological objectives)
 produce_spawner_abundance_above_biological_objective_river_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline", "Platypus", "Tortoise", "Elephant"))) |>
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |>
   pivot_longer(2:4, names_to = "type", values_to = "value") |>
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
 
 produce_spawner_abundance_above_biological_objective_ocean_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline", "Platypus", "Tortoise", "Elephant"))) |>
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |>
   pivot_longer(2:4, names_to = "type", values_to = "value") |>
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
@@ -330,11 +332,11 @@ all_inputs |>
 # Total weeks flooded for each year - take mean of annual totals, report mean and range of annual totals
 produce_weeks_flooded_pm(r_to_r_baseline_params, scenario = "Baseline", selected_run = "fall")
 bind_rows(produce_weeks_flooded_pm(r_to_r_baseline_params, scenario = "Baseline", selected_run = "fall"),
-          produce_weeks_flooded_pm(platypus_params, scenario = "Platypus", selected_run = "fall"),
-          produce_weeks_flooded_pm(elephant_params, scenario = "Elephant", selected_run = "fall"),
-          produce_weeks_flooded_pm(tortoise_params, scenario = "Tortoise", selected_run = "fall")
+          produce_weeks_flooded_pm(r_to_r_platypus_params, scenario = "Platypus", selected_run = "fall"),
+          produce_weeks_flooded_pm(r_to_r_elephant_params, scenario = "Elephant", selected_run = "fall"),
+          produce_weeks_flooded_pm(r_to_r_tortoise_params, scenario = "Tortoise", selected_run = "fall")
           ) |>
-  arrange(factor(scenario, levels = c("Baseline", "Platypus", "Elephant", "Tortoise"))) |>
+  arrange(factor(scenario, levels = c("Baseline", "Tortoise", "Platypus", "Elephant"))) |>
   pivot_longer(3:5, names_to = "type", values_to = "value") |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
 # 16.1 #
@@ -353,6 +355,9 @@ all_inputs |>
 natural_flows <- read_csv("data-raw/natural_flows_sac.csv") |>
   filter(comid == 2851441) |> glimpse()
 
+# TODO download natural flows for sj and produce PM separately
+# COMID 2821742
+
 nat <- natural_flows |>
   filter(year > 1979, year < 2000) |>
   rename(flow_cfs = value) |>
@@ -363,7 +368,7 @@ model_flows <- left_join(upper_sac_flow_eff, upper_sac_flow_biop,
                          upper_sac_flow_LTO_12a) |>
   rename("eff flow" = us_eff,
         "baseline" = us,
-        "LTO_12a" = us_lto_12a) |>
+        "LTO_12a" = us_lto_12a) |> # OK to keep LTO
   pivot_longer(cols = 2:3, names_to = "type", values_to = "flow_cfs") |>
   mutate(month = month(date), year = year(date)) |>
   select(-date) |>
@@ -391,11 +396,11 @@ ifelse(data$dry_eff_percent_of_nat_flows > 1, 1, data$dry_eff_percent_of_nat_flo
 # Flood frequency and stage for each watershed
 produce_flood_frequency_and_stage_pm(r_to_r_baseline_params, scenario = "Baseline", selected_run = "fall")
 bind_rows(produce_flood_frequency_and_stage_pm(r_to_r_baseline_params, scenario = "Baseline", selected_run = "fall"),
-          produce_flood_frequency_and_stage_pm(platypus_params, scenario = "Platypus", selected_run = "fall"),
-          produce_flood_frequency_and_stage_pm(elephant_params, scenario = "Elephant", selected_run = "fall"),
-          produce_flood_frequency_and_stage_pm(tortoise_params, scenario = "Tortoise", selected_run = "fall")
+          produce_flood_frequency_and_stage_pm(r_to_r_platypus_params, scenario = "Platypus", selected_run = "fall"),
+          produce_flood_frequency_and_stage_pm(r_to_r_elephant_params, scenario = "Elephant", selected_run = "fall"),
+          produce_flood_frequency_and_stage_pm(r_to_r_tortoise_params, scenario = "Tortoise", selected_run = "fall")
 ) |>
-  arrange(factor(scenario, levels = c("Baseline", "Platypus", "Elephant", "Tortoise"))) |>
+  arrange(factor(scenario, levels = c("Baseline", "Tortoise", "Platypus", "Elephant"))) |>
   pivot_longer(3:5, names_to = "type", values_to = "value") |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
 
@@ -403,43 +408,57 @@ bind_rows(produce_flood_frequency_and_stage_pm(r_to_r_baseline_params, scenario 
 # Hydropower generation ability
 # Only works for ones we have calsim runs for
 all_inputs |>
-  filter(performance_metric == "18 Hydropower Generation: Difference in Potential Power Produnction From Baseline") |> glimpse()
+  filter(performance_metric == "18 Hydropower Generation: Difference in Potential Power Produnction From Baseline") |>
   group_by(scenario, year) |>
   summarise(total_deliveries_to_mni = sum(value, na.rm = TRUE)) |>
   group_by(scenario) |>
   summarise(avg_annual_del = mean(total_deliveries_to_mni, na.rm = TRUE))
 
 # Update for blended scenarios
-  lost_gen <- tibble(volume_af = c(49000,44000,42000,74000,
-                                   23000,7000,10000,120000,137000,
-                                   21000,18000,12000,70000,83000),
-                     lost_gen = c(106656,91038,99412,165255,
-                                  48634,16578,22076,250968,316259,
-                                  42377,37589,24761,150909,193031))
+lost_gen <- tibble(volume_af = c(49000,44000,42000,74000,
+                                 23000,7000,10000,120000,137000,
+                                 21000,18000,12000,70000,83000),
+                   lost_gen = c(106656,91038,99412,165255,
+                                48634,16578,22076,250968,316259,
+                                42377,37589,24761,150909,193031))
+
+# TODO might be better to use CalSim3 storage outputs here
+upper_sac_flow_LTO_12a <- DSMflow::flows_cfs$LTO_12a |>
+  filter(year(date) > 1979, year(date) <= 2000) |>
+  select(date, us_lto_12a = `Upper Sacramento River`)
+
 # assume flow change means loss of flow at reservoir
-flow_change <- left_join(upper_sac_flow_eff, upper_sac_flow_biop,
-                         upper_sac_flow_LTO_12a) |>
-  # TODO add hrl calculations
+flow_change <- left_join(upper_sac_flow_eff, upper_sac_flow_biop) |>
+  left_join(upper_sac_flow_LTO_12a) |>
   mutate(us_af = us * 60.370,
          us_eff_af = us_eff * 60.370,
-         volume_af =  ifelse(us_eff_af - us_af > 0, us_eff_af - us_af, 0)) |>
-  select(date, volume_af) |> glimpse()
+         us_lto_af = us_lto_12a * 60.370,
+         # TODO eff sj relationship is based on the feather
+         eff_volume_af =  ifelse(us_eff_af - us_af > 0, us_eff_af - us_af, 0),
+         lto_volume_af = ifelse(us_lto_af - us_af > 0, us_lto_af - us_af, 0)) |>
+  select(date, eff_volume_af, lto_volume_af) |> glimpse()
 
 power_mod <- lm(lost_gen ~ volume_af, data = lost_gen)
 # summary(power_mod)
-power_gen_potential <- predict(power_mod, flow_change)
+power_gen_potential_eff <- predict(power_mod, flow_change |>
+                                     select(date, volume_af = eff_volume_af))
+power_gen_potential_lto <- predict(power_mod, flow_change |>
+                                     select(date, volume_af = lto_volume_af))
 
-flow_change$power_gen_potential <- ifelse(power_gen_potential < 0, 0, power_gen_potential)
-sum(flow_change$power_gen_potential)
+flow_change$power_gen_potential_eff <- ifelse(power_gen_potential_eff < 0, 0, power_gen_potential_eff)
+sum(flow_change$power_gen_potential_eff)
+
+flow_change$power_gen_potential_lto <- ifelse(power_gen_potential_lto < 0, 0, power_gen_potential_lto)
+sum(flow_change$power_gen_potential_lto)
+
 
 # DRY YEAR ONE
-flow_change_dy <- left_join(upper_sac_flow_eff, upper_sac_flow_biop,
-                            upper_sac_flow_LTO_12a) |>
-  # TODO add hrl calculations
+flow_change_dy <- left_join(upper_sac_flow_eff, upper_sac_flow_biop) |>
   mutate(year = year(date)) |>
   left_join(new_year_types) |>
   mutate(us_af = us * 60.370,
          us_eff_af = us_eff * 60.370,
+         # TODO eff sj?
          volume_af =  ifelse(us_eff_af - us_af > 0, us_eff_af - us_af, 0)) |>
   mutate(volume_af = ifelse(year_type == "Dry", volume_af, 0)) |>
   select(date, volume_af) |> glimpse()

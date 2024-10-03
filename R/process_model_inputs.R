@@ -127,7 +127,8 @@ create_model_inputs_tidy_df <- function(model_parameters, scenario_name, selecte
                        "Habitat and Hatchery" = DSMflow::flows_cfs$biop_itp_2018_2019, # TODO update
                        "Planned Plus" = DSMflow::flows_cfs$biop_itp_2018_2019,
                        "Platypus" = DSMflow::flows_cfs$eff_sac,
-                       "Tortoise" = DSMflow::flows_cfs$eff_sac) |>
+                       "Tortoise" = DSMflow::flows_cfs$eff_sac,
+                       "Elephant" = DSMflow::flows_cfs$LTO_12a) |>
      # TODO add balanced scenarios here
      mutate("Lower-mid Sacramento River" = 35.6/58 * `Lower-mid Sacramento River1` + 22.4/58 * `Lower-mid Sacramento River2`) |>
      select(-`Lower-mid Sacramento River1`, -`Lower-mid Sacramento River2`)

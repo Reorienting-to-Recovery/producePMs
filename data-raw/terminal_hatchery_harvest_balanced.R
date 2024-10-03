@@ -1,11 +1,12 @@
 # Terminal Hatchery Analysis
-total_released <- fallRunDSM::fall_hatchery_release |> rowSums() |> sum()
+total_released <- fallRunDSM::fall_hatchery_release[,,1] |> rowSums() |> sum()
 total_released
 
 # assume only 1% of net pen fish are harvested throughout lifetime
 # (consistent with/very low end of CFM_CWT_report studies, year 3 captures much higher)
 # https://www.calfish.org/Portals/2/Programs/CentralValley/CFM/docs/2019_CFM_CWT_Report.pdfv
 harvestable_ocean_terminal_hatcheries <- total_released * .01
+phased_harvestable_ocean_terminal_hatcheries <- c(rep(0, 10), rep(harvestable_ocean_terminal_hatcheries, 10))
 harvestable_ocean_terminal_hatcheries
 
 # how much harvest is in river vs ocean in the model
@@ -70,42 +71,86 @@ harvest_pm <- function() {
 
   return(total_harvest_df)
 }
-# PLATYPUS
+
+
+# PLATYPUS ----------------------------------------------------------------
+# no harvest of dry year cohorts (ocean, in-river)
+# IHH (ocean, in-river)
+# tribal harvest (in-river)
+# terminal hatchery all years
+
 platypus_harvest <- platypus_results$harvested_adults
-# All natural harvest is in river so that would all be sport harvest
-# All terminal hatchery harvest is in ocean
-platypus_harvest_river <- mean(platypus_harvest$natural_harvest)
+# in-river harvest is natural harvest (includes IHH and tribal and wet year cohorts)
+platypus_harvest_river <- mean(platypus_harvest$natural_harvest * in_river_harvest_percentace)
+# ocean harvest is terminal hatcheries in all years, plus hatchery (?)
 platypus_harvest_ocean <- mean(harvestable_ocean_terminal_hatcheries + platypus_harvest$hatchery_harvest)
 platypus_harvest_river
 platypus_harvest_ocean
 
 number_years_dont_meet <- (platypus_harvest$natural_harvest + (harvestable_ocean_terminal_hatcheries + platypus_harvest$hatchery_harvest))
-sum(number_years_dont_meet[6:20] > 250000)
+sum(number_years_dont_meet[6:20] > 250000) / 15 * 100
 
-# ELEPHANT
+number_years_dont_meet_river <- (platypus_harvest$natural_harvest)
+sum(number_years_dont_meet_river[6:20] > 50000) / 15 * 100
+number_years_dont_meet_river[6:20] < 50000
+
+number_years_dont_meet_ocean <- (harvestable_ocean_terminal_hatcheries + platypus_harvest$hatchery_harvest)
+sum(number_years_dont_meet_ocean[6:20] > 200000) / 15 * 100
+number_years_dont_meet_ocean[6:20] < 200000
+
+
+# ELEPHANT ----------------------------------------------------------------
+# intelligent CRR
+# tribal harvest
+# phased hatchery
+
+# terminal hatchery last 10 years
 elephant_harvest <- elephant_results$harvested_adults
-# All natural harvest is in river so that would all be sport harvest
-# All terminal hatchery harvest is in ocean
-elephant_harvest_river <- mean(elephant_harvest$natural_harvest)
-elephant_harvest_ocean <- mean(harvestable_ocean_terminal_hatcheries + elephant_harvest$hatchery_harvest)
+
+elephant_harvest_river <- mean(elephant_harvest$total_harvest * in_river_harvest_percentace) # TODO why don't we use natural_harvest here?
+elephant_harvest_ocean <- mean(elephant_harvest$total_harvest * (1 - in_river_harvest_percentace) + phased_harvestable_ocean_terminal_hatcheries)
 elephant_harvest_river
 elephant_harvest_ocean
 
-number_years_dont_meet <- (elephant_harvest$natural_harvest +
-                             (harvestable_ocean_terminal_hatcheries + elephant_harvest$hatchery_harvest))
+number_years_dont_meet <- (elephant_harvest$total_harvest * in_river_harvest_percentace) + (elephant_harvest$total_harvest * (1 - in_river_harvest_percentace))
 sum(number_years_dont_meet[6:20] > 250000)
 
+number_years_dont_meet_river <- elephant_harvest$total_harvest * in_river_harvest_percentace
+sum(number_years_dont_meet_river[6:20] > 50000) / 15 * 100
+number_years_dont_meet_river[6:20] < 50000
+
+number_years_dont_meet_ocean <- elephant_harvest$total_harvest * (1 - in_river_harvest_percentace) +
+  phased_harvestable_ocean_terminal_hatcheries
+sum(number_years_dont_meet_ocean[6:20] > 200000) / 15 * 100
+number_years_dont_meet_ocean[6:20] < 200000
+
 # TORTOISE
+# no harvest of dry year cohorts
+# harvest of hatchery fish only (ocean, in-river)
+# tribal harvest
+# phased hatchery
+
 tortoise_harvest <- tortoise_results$harvested_adults
-# All natural harvest is in river so that would all be sport harvest
-# All terminal hatchery harvest is in ocean
-tortoise_harvest_river <- mean(tortoise_harvest$natural_harvest)
-tortoise_harvest_ocean <- mean(harvestable_ocean_terminal_hatcheries + tortoise_harvest$hatchery_harvest)
+
+tortoise_harvest_river <- mean(tortoise_harvest$total_harvest * in_river_harvest_percentace)
+tortoise_harvest_ocean <- mean(phased_harvestable_ocean_terminal_hatcheries + tortoise_harvest$hatchery_harvest)
 tortoise_harvest_river
 tortoise_harvest_ocean
 
-number_years_dont_meet <- (tortoise_harvest$natural_harvest + (harvestable_ocean_terminal_hatcheries + tortoise_harvest$hatchery_harvest))
-sum(number_years_dont_meet[6:20] > 250000)
+# TODO what are harvest minimums for ocean and in-river ?
+number_years_dont_meet <- (tortoise_harvest$total_harvest * in_river_harvest_percentace) +
+  (phased_harvestable_ocean_terminal_hatcheries +
+     (tortoise_harvest$total_harvest * (1 - in_river_harvest_percentace)))
+sum(number_years_dont_meet[6:20] > 250000) / 15 * 100
+
+number_years_dont_meet_river <- tortoise_harvest$total_harvest * in_river_harvest_percentace
+sum(number_years_dont_meet_river[6:20] > 50000) / 15 * 100
+number_years_dont_meet_river[6:20] < 50000
+
+number_years_dont_meet_ocean <- tortoise_harvest$total_harvest * (1 - in_river_harvest_percentace) +
+  phased_harvestable_ocean_terminal_hatcheries
+sum(number_years_dont_meet_ocean[6:20] > 200000) / 15 * 100
+number_years_dont_meet_ocean[6:20] < 200000
 
 # TESTS
 colSums(platypus_results$spawners * .08, na.rm = TRUE)
@@ -115,15 +160,15 @@ colSums(tortoise_results$spawners * .08, na.rm = TRUE)
 river_harvest <- tibble(years = 1:20,
                         Baseline = (baseline_harvest$total_harvest * in_river_harvest_percentace),
                         "Platypus" = (platypus_harvest$natural_harvest),
-                        "Elephant" = (elephant_results$total_harvest * in_river_harvest_percentace),
-                        "Tortoise" = (tortoise_results$total_harvest * in_river_harvest_percentace)) |>
-  pivot_longer(Baseline:`Tortoise`, names_to = "Scenario", values_to = "river_harvest") |> glimpse()
+                        "Elephant" = (elephant_harvest$total_harvest * in_river_harvest_percentace),
+                        "Tortoise" = (tortoise_harvest$total_harvest * in_river_harvest_percentace)) |>
+  pivot_longer(Baseline:Tortoise, names_to = "Scenario", values_to = "river_harvest") |> glimpse()
 
 ocean_harvest <- tibble(years = 1:20,
                         Baseline = (baseline_harvest$total_harvest * (1 - in_river_harvest_percentace)),
                         "Platypus" = (harvestable_ocean_terminal_hatcheries + platypus_harvest$hatchery_harvest),
-                        "Elephant" = (harvestable_ocean_terminal_hatcheries + (elephant_harvest$total_harvest * (1 - in_river_harvest_percentace))),
-                        "Tortoise" = (harvestable_ocean_terminal_hatcheries + (tortoise_harvest$total_harvest * (1 - in_river_harvest_percentace)))) |>
+                        "Elephant" = (phased_harvestable_ocean_terminal_hatcheries + (elephant_harvest$total_harvest * (1 - in_river_harvest_percentace))),
+                        "Tortoise" = (phased_harvestable_ocean_terminal_hatcheries + (tortoise_harvest$total_harvest * (1 - in_river_harvest_percentace)))) |>
   pivot_longer(Baseline:`Tortoise`, names_to = "Scenario", values_to = "ocean_harvest") |> glimpse()
 scenario_six_colors <- c("#02401B", "#9A8822", "#798E87", "#5B1A18","#972D15", "#DC863B", "#AA9486")
 

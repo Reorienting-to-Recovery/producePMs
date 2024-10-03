@@ -3,14 +3,15 @@
 # remotes::install_github("Reorienting-to-Recovery/fallRunDSM@wip", force = TRUE)
 library(fallRunDSM) # make sure R2R org
 # # remotes::install_github("Reorienting-to-Recovery/DSMhabitat")
+# remotes::install_github("Reorienting-to-Recovery/R2Rscenarios")
 # remotes::install_github("Reorienting-to-Recovery/DSMflow")
 library(DSMhabitat)
 library(producePMs)
 library(tidyverse)
 library(R2Rscenario)
 
-remotes::install_github("Reorienting-to-Recovery/fallRunDSM@wip", force = TRUE)
-remotes::install_github("Reorienting-to-Recovery/R2Rscenarios", force = TRUE)
+# remotes::install_github("Reorienting-to-Recovery/fallRunDSM@wip", force = TRUE)
+#remotes::install_github("Reorienting-to-Recovery/R2Rscenarios", force = TRUE)
 
 # Run all with updated movement hypo weights
 new_params_baseline <- fallRunDSM::r_to_r_baseline_params

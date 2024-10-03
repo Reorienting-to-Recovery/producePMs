@@ -95,7 +95,10 @@ produce_flood_frequency_and_stage_pm <- function(model_params, scenario, selecte
                       "Habitat and Hatchery" = DSMflow::flows_cfs$biop_itp_2018_2019,
                       "Kitchen Sink" = DSMflow::flows_cfs$eff_sac,
                       "Max Hatchery" = DSMflow::flows_cfs$biop_itp_2018_2019,
-                      "Planned Plus" = DSMflow::flows_cfs$biop_itp_2018_2019) |> # TODO update
+                      "Planned Plus" = DSMflow::flows_cfs$biop_itp_2018_2019,
+                      "Platypus" = DSMflow::flows_cfs$eff_sac,
+                      "Tortoise" = dry_year_scenario_flow,
+                      "Elephant" = DSMflow::flows_cfs$LTO_12a) |> # TODO update
     mutate("Lower-mid Sacramento River" = 35.6/58 * `Lower-mid Sacramento River1` + 22.4/58 * `Lower-mid Sacramento River2`) |>
     select(-`Lower-mid Sacramento River1`, -`Lower-mid Sacramento River2`)
   generate_lag_flows <- function(selected_watershed) {
@@ -202,3 +205,4 @@ storage_nodes <- map_nodes_to_storage_facilities$nodes
               `Min Difference in Potential Power Produnction From Baseline` = min(`Annual Difference in Potential Power Produnction From Baseline`),
               `Max Difference in Potential Power Produnction From Baseline` = max(`Annual Difference in Potential Power Produnction From Baseline`)) |> glimpse()
 }
+
