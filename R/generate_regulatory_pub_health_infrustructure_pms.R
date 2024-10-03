@@ -98,7 +98,8 @@ produce_flood_frequency_and_stage_pm <- function(model_params, scenario, selecte
                       "Planned Plus" = DSMflow::flows_cfs$biop_itp_2018_2019,
                       "Platypus" = DSMflow::flows_cfs$eff_sac,
                       "Tortoise" = dry_year_scenario_flow,
-                      "Elephant" = DSMflow::flows_cfs$LTO_12a) |> # TODO update
+                      "Elephant" = DSMflow::flows_cfs$LTO_12a,
+                      "Elephant Plus" = DSMflow::flows_cfs$LTO_12a_eff_dy) |> # TODO update
     mutate("Lower-mid Sacramento River" = 35.6/58 * `Lower-mid Sacramento River1` + 22.4/58 * `Lower-mid Sacramento River2`) |>
     select(-`Lower-mid Sacramento River1`, -`Lower-mid Sacramento River2`)
   generate_lag_flows <- function(selected_watershed) {

@@ -240,7 +240,8 @@ produce_2yr_30d_floodplain_acres_pm <- function(model_parameters, scenario, sele
                       "Planned Plus" = DSMflow::flows_cfs$biop_itp_2018_2019,
                       "Platypus" = DSMflow::flows_cfs$eff_sac,
                       "Tortoise" = DSMflow::flows_cfs$eff_sac,
-                      "Elephant" = DSMflow::flows_cfs$LTO_12a) |> # TODO update
+                      "Elephant" = DSMflow::flows_cfs$LTO_12a,
+                      "Elephant Plus" = DSMflow::flows_cfs$LTO_12a_eff_dy) |> # TODO update
     mutate("Lower-mid Sacramento River" = 35.6/58 * `Lower-mid Sacramento River1` + 22.4/58 * `Lower-mid Sacramento River2`) |>
     select(-`Lower-mid Sacramento River1`, -`Lower-mid Sacramento River2`)
   create_threshold_df <- function(watershed) {

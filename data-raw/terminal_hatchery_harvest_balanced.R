@@ -124,6 +124,31 @@ number_years_dont_meet_ocean <- elephant_harvest$total_harvest * (1 - in_river_h
 sum(number_years_dont_meet_ocean[6:20] > 200000) / 15 * 100
 number_years_dont_meet_ocean[6:20] < 200000
 
+# ELEPHANT PLUS ----------------------------------------------------------------
+# intelligent CRR
+# tribal harvest
+# phased hatchery
+
+# terminal hatchery last 10 years
+elephant_plus_harvest <- elephant_plus_results$harvested_adults
+
+elephant_plus_harvest_river <- mean(elephant_plus_harvest$total_harvest * in_river_harvest_percentace) # TODO why don't we use natural_harvest here?
+elephant_plus_harvest_ocean <- mean(elephant_plus_harvest$total_harvest * (1 - in_river_harvest_percentace) + phased_harvestable_ocean_terminal_hatcheries)
+elephant_plus_harvest_river
+elephant_plus_harvest_ocean
+
+number_years_dont_meet <- (elephant_plus_harvest$total_harvest * in_river_harvest_percentace) + (elephant_plus_harvest$total_harvest * (1 - in_river_harvest_percentace))
+sum(number_years_dont_meet[6:20] > 250000)
+
+number_years_dont_meet_river <- elephant_plus_harvest$total_harvest * in_river_harvest_percentace
+sum(number_years_dont_meet_river[6:20] > 50000) / 15 * 100
+number_years_dont_meet_river[6:20] < 50000
+
+number_years_dont_meet_ocean <- elephant_plus_harvest$total_harvest * (1 - in_river_harvest_percentace) +
+  phased_harvestable_ocean_terminal_hatcheries
+sum(number_years_dont_meet_ocean[6:20] > 200000) / 15 * 100
+number_years_dont_meet_ocean[6:20] < 200000
+
 # TORTOISE
 # no harvest of dry year cohorts
 # harvest of hatchery fish only (ocean, in-river)
