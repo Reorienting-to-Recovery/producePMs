@@ -15,15 +15,14 @@ params_list <- c(fall_baseline_results,
 scenarios_lists <- c("Baseline",
                      "Dry Year",
                      "Kitchen Sink",
-                     "Habitat and Hatchery",
-                     "Planned Plus"
+                     "Habitat and Hatchery"
 )
-run_list <- c("fall", "fall", "fall", "fall", "fall")
+run_list <- c("fall", "fall", "fall", "fall")
 ### Biological Objectives ### --------------------------------------------------
 # 1 #
 #
 produce_spawner_abundance_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |>
+  arrange(factor(scenario, levels = c("Baseline", "Dry Year", "Habitat and Hatchery", "Kitchen Sink"))) |>
   pivot_longer(2:4, names_to = "type", values_to = "value") |>
   pivot_wider(names_from = scenario, values_from = value) |>
   mutate_if(is.numeric, pretty_num) |> View()
@@ -31,13 +30,13 @@ produce_spawner_abundance_pm(all_res) |>
 # 2.1 #
 # Average central valley wide CRR-
 # produce_crr_pm(all_res) |>
-#   arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |>
+#   arrange(factor(scenario, levels = c("Baseline", "Dry Year", "Habitat and Hatchery", "Kitchen Sink"))) |>
 #   pivot_longer(2:4, names_to = "type", values_to = "value") |>
 #   pivot_wider(names_from = scenario, values_from = value) |> View()
 
 # redo with geometric mean
 produce_crr_geometric_mean_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |>
+  arrange(factor(scenario, levels = c("Baseline", "Dry Year", "Habitat and Hatchery", "Kitchen Sink"))) |>
   pivot_longer(2:4, names_to = "type", values_to = "value") |>
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
@@ -45,7 +44,7 @@ produce_crr_geometric_mean_pm(all_res) |>
 # 2.2 #
 # Average growth rate central valley wide
 produce_growth_rate_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |>
+  arrange(factor(scenario, levels = c("Baseline", "Dry Year", "Habitat and Hatchery", "Kitchen Sink"))) |>
   pivot_longer(2:4, names_to = "type", values_to = "value") |>
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
@@ -53,26 +52,26 @@ produce_growth_rate_pm(all_res) |>
 # 3.1 #
 # Number of independent pops
 produce_independent_pops_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |> View()
+  arrange(factor(scenario, levels = c("Baseline", "Dry Year", "Habitat and Hatchery", "Kitchen Sink"))) |> View()
 
 # 3.1.1
 produce_populations_present_pm(all_res)
 # 3.2 #
 # of potential independent viable populations in each diversity group per ESU/run
 produce_independent_pops_per_diversity_group_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |> View()
+  arrange(factor(scenario, levels = c("Baseline", "Dry Year", "Habitat and Hatchery", "Kitchen Sink"))) |> View()
 
 # LOoks like now this is total independent / possible ind (looks like possible ind 20 tribs * 16 years (only possible to meet criteria in 16 years)) so 320
 
 # 3.3 #
 # number dependent pops
 produce_dependent_pops_per_diversity_group_pm(all_res, selected_run = "fall") |>
-  arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |> View()
+  arrange(factor(scenario, levels = c("Baseline", "Dry Year", "Habitat and Hatchery", "Kitchen Sink"))) |> View()
 
 # 4 #
 # PHOS
 produce_phos_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |>
+  arrange(factor(scenario, levels = c("Baseline", "Dry Year", "Habitat and Hatchery", "Kitchen Sink"))) |>
   pivot_longer(3:5, names_to = "type", values_to = "value") |>
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
@@ -80,19 +79,19 @@ produce_phos_pm(all_res) |>
 # 5.1 #
 # Age distribution of spawning adults
 produce_categorical_return_age_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |> View()
+  arrange(factor(scenario, levels = c("Baseline", "Dry Year", "Habitat and Hatchery", "Kitchen Sink"))) |> View()
 
 # 5.2 #
 # shannon diversity index
 produce_shannon_div_ind_size_pm(all_res) |>
   mutate_if(is.numeric, pretty_num) |>
-  arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |> View()
+  arrange(factor(scenario, levels = c("Baseline", "Dry Year", "Habitat and Hatchery", "Kitchen Sink"))) |> View()
 
 # 5.3 #
 # size distribution & month of juveniles
 produce_shannon_div_ind_size_and_timing_pm(all_res) |>
   mutate_if(is.numeric, pretty_num) |>
-  arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |> View()
+  arrange(factor(scenario, levels = c("Baseline", "Dry Year", "Habitat and Hatchery", "Kitchen Sink"))) |> View()
 
 # 5.4 #
 produce_floodplain_over_inchannel_habitat(fall_baseline_results, r_to_r_baseline_params, "fall", "Baseline")
@@ -105,7 +104,7 @@ produce_floodplain_over_inchannel_habitat(fall_run_pc_results, r_to_r_planned_an
 # marine derived nutrient
 produce_marine_nutrient_pm(all_res) |>
   mutate_if(is.numeric, pretty_num) |>
-  arrange(factor(scenario, levels = c("Baseline", "Theoretical Max Habitat", "Max Flow", "No Harvest", "No Hatchery", "Max Hatchery", "Max Flow & Max Habitat"))) |> View()
+  arrange(factor(scenario, levels = c("Baseline", "Dry Year", "Habitat and Hatchery", "Kitchen Sink"))) |> View()
 
 # 7 #
 # # time to recovery
