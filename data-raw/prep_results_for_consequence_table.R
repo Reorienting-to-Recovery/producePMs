@@ -179,9 +179,8 @@ produce_2yr_30d_floodplain_acres_pm
 bind_rows(produce_2yr_30d_floodplain_acres_pm(r_to_r_baseline_params, scenario = "Baseline", selected_run = "fall"),
           produce_2yr_30d_floodplain_acres_pm(r_to_r_dry_years_params, scenario = "Dry Years", selected_run = "fall"),
           produce_2yr_30d_floodplain_acres_pm(r_to_r_habitat_and_hatchery_params, scenario = "Habitat and Hatchery", selected_run = "fall"),
-          produce_2yr_30d_floodplain_acres_pm(r_to_r_kitchen_sink_params, scenario = "Kitchen Sink", selected_run = "fall"),
-          produce_2yr_30d_floodplain_acres_pm(r_to_r_planned_and_current, scenario = "Planned Plus", selected_run = "fall")) |>
-  arrange(factor(scenario, levels = c("Baseline", "Dry Years", "Habitat and Hatchery", "Kitchen Sink", "Planned Plus"))) |>
+          produce_2yr_30d_floodplain_acres_pm(r_to_r_kitchen_sink_params, scenario = "Kitchen Sink", selected_run = "fall")) |>
+  arrange(factor(scenario, levels = c("Baseline", "Dry Years", "Habitat and Hatchery", "Kitchen Sink"))) |>
   pivot_longer(3, names_to = "type", values_to = "value") |>
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
@@ -308,9 +307,8 @@ bind_rows(produce_weeks_flooded_pm(r_to_r_baseline_params, scenario = "Baseline"
           produce_weeks_flooded_pm(r_to_r_kitchen_sink_params, scenario = "Kitchen Sink", selected_run = "fall"),
           produce_weeks_flooded_pm(r_to_r_dry_years_params, scenario = "Dry Years", selected_run = "fall"),
           produce_weeks_flooded_pm(r_to_r_habitat_and_hatchery_params, scenario = "Habitat and Hatchery", selected_run = "fall"),
-          produce_weeks_flooded_pm(r_to_r_planned_and_current, scenario = "Planned Plus", selected_run = "fall"),
           ) |>
-  arrange(factor(scenario, levels = c("Baseline", "Dry Years", "Habitat and Hatchery", "Kitchen Sink", "Planned Plus"))) |>
+  arrange(factor(scenario, levels = c("Baseline", "Dry Years", "Habitat and Hatchery", "Kitchen Sink"))) |>
   pivot_longer(3:5, names_to = "type", values_to = "value") |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
 # 16.1 #
@@ -368,9 +366,8 @@ bind_rows(produce_flood_frequency_and_stage_pm(r_to_r_baseline_params, scenario 
           produce_flood_frequency_and_stage_pm(r_to_r_kitchen_sink_params, scenario = "Kitchen Sink", selected_run = "fall"),
           produce_flood_frequency_and_stage_pm(r_to_r_dry_years_params, scenario = "Dry Years", selected_run = "fall"),
           produce_flood_frequency_and_stage_pm(r_to_r_habitat_and_hatchery_params, scenario = "Habitat and Hatchery", selected_run = "fall"),
-          produce_flood_frequency_and_stage_pm(r_to_r_planned_and_current, scenario = "Planned Plus", selected_run = "fall"),
 ) |>
-  arrange(factor(scenario, levels = c("Baseline", "Dry Years", "Habitat and Hatchery", "Kitchen Sink", "Planned Plus"))) |>
+  arrange(factor(scenario, levels = c("Baseline", "Dry Years", "Habitat and Hatchery", "Kitchen Sink"))) |>
   pivot_longer(3:5, names_to = "type", values_to = "value") |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
 

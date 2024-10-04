@@ -267,6 +267,26 @@ create_calsim_non_cvpia_nodes_tidy <- function(){
 
   storage_nodes <- map_nodes_to_storage_facilities$nodes
 
+  # calsim3
+  map_nodes_to_storage_facilities_calsim3 <- tibble(storage_facilities = c("Wiskeytown Lake",
+                                                                   "Shasta Lake",
+                                                                   "Keswich Reservoir",
+                                                                   'Thermalito Complex',
+                                                                   "Lake Oroville",
+                                                                   "Stony Gorge",
+                                                                   "Engilbright",
+                                                                   "Folsom",
+                                                                   "New Hogan",
+                                                                   "New Melones",
+                                                                   "New Don Padro",
+                                                                   "Lake McClure"),
+                                                                   #"Friant"), # missing friant!
+                                                    nodes = c("S_WKYTN", "S_SHSTA", "S_KSWCK", "S_THRMA", "S_OROVL", "S_SGRGE",
+                                                              "S_ENGLB", "S_FOLSM", "S_NHGAN", "S_MELON", "S_PEDRO",
+                                                              "S_MCLRE"))
+
+  storage_nodes_calsim_3 <- map_nodes_to_storage_facilities_calsim3$nodes
+
   pick_columns <- function(file, nodes) {
     col_nm <- readxl::read_excel(file, skip = 1) %>% names()
     temp <- readxl::read_excel(file, skip = 7, col_names = col_nm)
@@ -294,7 +314,17 @@ create_calsim_non_cvpia_nodes_tidy <- function(){
     left_join(map_nodes_to_storage_facilities) |>
     mutate(scenario = "Baseline") |> glimpse()
 
-  all_storage <- bind_rows(run_of_river_storage_data, baseline_storage_data) |>
+  # calsim3
+  LTO_12a_storage_data <- readxl::read_excel(here::here("data-raw", "calsim3-data", "HRL-storage.xlsx")) |>
+    # fix date (excel read in wrong)
+    mutate(date = as.Date(paste0(year(date) - 100, "-", month(date), "-", day(date)))) |>
+    filter(year(date) %in% 1979:2000) |>
+    select(date, map_nodes_to_storage_facilities_calsim3$nodes) |>
+    pivot_longer(-date, names_to = "nodes", values_to = "TAF") |>
+    left_join(map_nodes_to_storage_facilities_calsim3) |>
+    mutate(scenario = "Elephant") |> glimpse()
+
+  all_storage <- bind_rows(run_of_river_storage_data, baseline_storage_data, LTO_12a_storage_data) |>
     mutate(af = TAF * 1000) |>
     group_by(storage_facilities, year = lubridate::year(date), scenario, nodes) |>
     summarize(volume_af = sum(af)) |>
@@ -325,7 +355,7 @@ create_calsim_non_cvpia_nodes_tidy <- function(){
            scenario = "Max Flow",
            location = storage_facilities,
            run = NA) |>
-    select(-`Baseline`, -`Max Flow`, -storage_facilities, -nodes) |>
+    select(-`Baseline`, -`Max Flow`, -Elephant, -storage_facilities, -nodes) |>
     glimpse()
 
   diff_in_power_production_max_flow_max_hab <- all_storage  |>
@@ -336,10 +366,22 @@ create_calsim_non_cvpia_nodes_tidy <- function(){
            scenario = "Max Flow & Max Habitat",
            location = storage_facilities,
            run = NA) |>
-    select(-`Baseline`, -`Max Flow`, -storage_facilities, -nodes) |>
+    select(-`Baseline`, -`Max Flow`, -Elephant, -storage_facilities, -nodes) |>
     glimpse()
 
-  hydropower_pm <- bind_rows(diff_in_power_production_max_flow, diff_in_power_production_max_flow_max_hab)
+  diff_in_power_production_elephant <- all_storage  |>
+    select(-volume_af) |>
+    pivot_wider(names_from = scenario, values_from = power_gen_potential) |>
+    mutate(value =  Elephant - Baseline,
+           performance_metric = "18 Hydropower Generation: Difference in Potential Power Produnction From Baseline",
+           scenario = "Elephant",
+           location = storage_facilities,
+           run = NA) |>
+    select(-`Baseline`, -Elephant, -`Max Flow`, -storage_facilities, -nodes) |>
+    glimpse()
+
+  hydropower_pm <- bind_rows(diff_in_power_production_max_flow, diff_in_power_production_max_flow_max_hab,
+                             diff_in_power_production_elephant)
   #total deliveries agriculture
   del_nodes <- tibble(location = c("North of Delta", "North of Delta", "North of Delta", "North of Delta",
                                     "South of Delta", "South of Delta", "South of Delta", "South of Delta",
@@ -356,6 +398,25 @@ create_calsim_non_cvpia_nodes_tidy <- function(){
                                 "DEL_CVP_TOTAL_N", "DEL_CVP_TOTAL_S", "DEL_SWP_PAG_N", "DEL_SWP_PMI_N",
                                 "DEL_SWP_PAG_S", "DEL_SWP_PMI_S", "DEL_SWP_TOT_N", "DEL_SWP_TOT_S"))
   ag_del_nodes <- del_nodes |> filter(type == "Ag") |> pull(nodes)
+
+  # calsim3
+  # TODO missing DEL_SWP_TOT_N
+  del_nodes_calsim3 <-  tibble(location = c("North of Delta", "North of Delta", "North of Delta", "North of Delta",
+                                            "South of Delta", "South of Delta", "South of Delta", "South of Delta",
+                                            "North of Delta", "South of Delta", "North of Delta", "North of Delta",
+                                            "South of Delta", "South of Delta", "South of Delta"),
+                               type = c("Ag", "M&I", "Refuge", "Ag", "Ag", "M&I", "Refuge", "Ag", "All", "All",
+                                        "Ag", "M&I", "Ag", "M&I",  "All"),
+                               contract = c("CVP Project", "CVP Project", "CVP Project", "Settlement",
+                                            "CVP Project", "CVP Project", "CVP Project", "Exchange",
+                                            "All CVP", "All CVP", "SWP Project", "SWP Project", "SWP Project",
+                                            "SWP Project", "All SWP"),
+                               nodes = c("DEL_CVP_PAG_N", "DEL_CVP_PMI_N", "DEL_CVP_PRF_N", "DEL_CVP_PSC_N",
+                                         "DEL_CVP_PAG_S", "DEL_CVP_PMI_S", "DEL_CVP_PRF_S", "DEL_CVP_PEX_S",
+                                         "DEL_CVP_TOTAL_N", "DEL_CVP_TOTAL_S", "DEL_SWP_PAG_N", "DEL_SWP_PMI_N",
+                                         "DEL_SWP_PAG_S", "DEL_SWP_PMI_S", "DEL_SWP_TOT_S"))
+  ag_del_nodes_calsim3 <- del_nodes_calsim3 |> filter(type == "Ag") |> pull(nodes)
+
   run_of_river_delivery_data <- pick_columns("data-raw/run_of_river_deliveries.xlsx", ag_del_nodes) |>
     pivot_longer(-date, names_to = "nodes", values_to = "CFS") |>
     left_join(del_nodes) |>
@@ -364,8 +425,18 @@ create_calsim_non_cvpia_nodes_tidy <- function(){
     pivot_longer(-date, names_to = "nodes", values_to = "CFS") |>
     left_join(del_nodes) |>
     mutate(scenario = "Baseline") |> glimpse()
+  # calsim3
+  lto_12a_delivery_data <- readxl::read_excel(here::here("data-raw", "calsim3-data", "HRL-deliveries-swp-cvp.xlsx")) |>
+    # fix date (excel read in wrong)
+    mutate(date = as.Date(paste0(year(date) - 100, "-", month(date), "-", day(date)))) |>
+    filter(year(date) %in% 1979:2000) |>
+    select(date, del_nodes_calsim3$nodes) |>
+    pivot_longer(-date, names_to = "nodes", values_to = "TAF") |>
+    left_join(del_nodes_calsim3) |>
+    mutate(scenario = "Elephant") |> glimpse()
 
-  all_ag_deleveries <- bind_rows(run_of_river_delivery_data, baseline_delivery_data) |>
+  all_ag_deleveries <- bind_rows(run_of_river_delivery_data, baseline_delivery_data,
+                                 lto_12a_delivery_data) |>
     mutate(af = CFS * 59.5) |> # 1 cfs = 1.983 CFS in one day * 30 days = 59.5 ac in a month
     group_by(location, year = lubridate::year(date), scenario) |>
     summarize(volume_af = sum(af)) |>
@@ -384,6 +455,7 @@ create_calsim_non_cvpia_nodes_tidy <- function(){
   #TODO see if we can add MOKE and Tulare in
   #total deliveries mni
   mni_del_nodes <- del_nodes |> filter(type == "M&I") |> pull(nodes)
+  min_del_nodes_calsim3 <- del_nodes_calsim3 |> filter(type == "M&I") |> pull(nodes)
   run_of_river_delivery_data_m <- pick_columns("data-raw/run_of_river_deliveries.xlsx", mni_del_nodes) |>
     pivot_longer(-date, names_to = "nodes", values_to = "CFS") |>
     left_join(del_nodes) |>
@@ -392,8 +464,17 @@ create_calsim_non_cvpia_nodes_tidy <- function(){
     pivot_longer(-date, names_to = "nodes", values_to = "CFS") |>
     left_join(del_nodes) |>
     mutate(scenario = "Baseline") |> glimpse()
+  lto_12a_delivery_data_m <- readxl::read_excel(here::here("data-raw", "calsim3-data", "HRL-deliveries-swp-cvp.xlsx")) |>
+    # fix date (excel read in wrong)
+    mutate(date = as.Date(paste0(year(date) - 100, "-", month(date), "-", day(date)))) |>
+    filter(year(date) %in% 1979:2000) |>
+    select(date, all_of(min_del_nodes_calsim3)) |>
+    pivot_longer(-date, names_to = "nodes", values_to = "CFS") |>
+    left_join(del_nodes) |>
+    mutate(scenario = "Elephant") |> glimpse()
 
-  all_mandi_deleveries <- bind_rows(run_of_river_delivery_data_m, baseline_delivery_data_m) |>
+  all_mandi_deleveries <- bind_rows(run_of_river_delivery_data_m, baseline_delivery_data_m,
+                                    lto_12a_delivery_data_m) |>
     mutate(af = CFS * 59.5) |> # 1 cfs = 1.983 CFS in one day * 30 days = 59.5 ac in a month
     group_by(location, year = lubridate::year(date), scenario) |>
     summarize(volume_af = sum(af)) |>
@@ -413,6 +494,7 @@ create_calsim_non_cvpia_nodes_tidy <- function(){
 
   #total deliveries refuges
   refuge_del_nodes <- del_nodes |> filter(type == "Refuge") |> pull(nodes)
+  refuge_del_nodes_calsim3 <- del_nodes_calsim3 |> filter(type == "Refuge") |> pull(nodes)
   run_of_river_delivery_data_refuge <- pick_columns("data-raw/run_of_river_deliveries.xlsx", refuge_del_nodes) |>
     pivot_longer(-date, names_to = "nodes", values_to = "CFS") |>
     left_join(del_nodes) |>
@@ -421,8 +503,17 @@ create_calsim_non_cvpia_nodes_tidy <- function(){
     pivot_longer(-date, names_to = "nodes", values_to = "CFS") |>
     left_join(del_nodes) |>
     mutate(scenario = "Baseline") |> glimpse()
+  lto_12a_delivery_data_refuge <- readxl::read_excel(here::here("data-raw", "calsim3-data", "HRL-deliveries-swp-cvp.xlsx")) |>
+    # fix date (excel read in wrong)
+    mutate(date = as.Date(paste0(year(date) - 100, "-", month(date), "-", day(date)))) |>
+    filter(year(date) %in% 1979:2000) |>
+    select(date, all_of(refuge_del_nodes_calsim3)) |>
+    pivot_longer(-date, names_to = "nodes", values_to = "CFS") |>
+    left_join(del_nodes) |>
+    mutate(scenario = "Elephant") |> glimpse()
 
-  all_refuge_deleveries <- bind_rows(run_of_river_delivery_data_refuge, baseline_delivery_data_refuge) |>
+  all_refuge_deleveries <- bind_rows(run_of_river_delivery_data_refuge, baseline_delivery_data_refuge,
+                                     lto_12a_delivery_data_refuge) |>
     mutate(af = CFS * 59.5) |> # 1 cfs = 1.983 CFS in one day * 30 days = 59.5 ac in a month
     group_by(location, year = lubridate::year(date), scenario) |>
     summarize(volume_af = sum(af)) |>
@@ -439,6 +530,7 @@ create_calsim_non_cvpia_nodes_tidy <- function(){
     glimpse()
 
   # delta total outflow
+  # TODO still missing this node for CalSim3
   delta_outflow_node <- c("C407")
   run_of_river_delta_outflow <- pick_columns("data-raw/run_of_river_delta_outflow.xlsx", delta_outflow_node) |>
     pivot_longer(-date, names_to = "nodes", values_to = "CFS") |>
