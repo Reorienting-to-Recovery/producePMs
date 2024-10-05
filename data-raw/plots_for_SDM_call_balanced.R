@@ -128,7 +128,16 @@ flow_data_eff <- DSMflow::flows_cfs$eff_sac |>
   filter(water_year < 2001) |>
   left_join(water_yt_lookup) |> glimpse()
 
-flow_data <-bind_rows(flow_data_biop, flow_data_eff)
+flow_data_lto_12a <- DSMflow::flows_cfs$LTO_12a |>
+  pivot_longer(cols = -date, names_to = "watershed", values_to = "flow_cfs") |>
+  filter(date >= lubridate::as_date("1979-01-01"),
+         watershed %in% c("Upper Sacramento River", "San Joaquin River")) |>
+  mutate(water_year = ifelse(month(date) %in% 10:12, year(date) + 1, year(date)),
+         Hydrology = "LTO_12a") |>
+  filter(water_year < 2001) |>
+  left_join(water_yt_lookup) |> glimpse()
+
+flow_data <-bind_rows(flow_data_biop, flow_data_eff, flow_data_lto_12a)
 
 year_lookup <- tibble(year = 1:21,
                       actual_year = 1980:2000)
@@ -176,7 +185,7 @@ ggplot() +
   geom_area(data = flow_data, aes(x = date, y = flow_cfs, fill = Hydrology), alpha = .5, position = "identity") +
   # geom_col(data = flow_data, aes(x = date, y = -4000, fill = year_type), alpha = 1, width = 31) +
   scale_fill_manual(values = muted,
-                    limits = c("EFF", "Biop (Baseline)")
+                    limits = c("EFF", "Biop (Baseline)", "LTO_12a")
                     ) +
   # geom_line(data = flow_data, aes(x = date, y = flow_cfs), color = "black", linewidth = .1) +
   # geom_line(data = flow_spawn_plot_data, aes(x = date, y = value, color = scenario),linewidth = .5, alpha = 1) +
@@ -184,7 +193,7 @@ ggplot() +
   # geom_line(data = flow_spawn_plot_data |> filter(scenario == "Baseline"), aes(x = date, y = value), color = "black", linewidth = .5, alpha = 1) +
   scale_y_continuous(labels = scales::comma) +
   labs(title = "Sacramento and San Joaquin River Flows",
-       subtitle = "Baseline and EFF",
+       subtitle = "Baseline, EFF, and LTO 12a",
        y = "Flow CFS",
        x = "Year",
        # linetype = "Bookend Scenario",
