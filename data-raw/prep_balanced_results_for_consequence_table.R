@@ -236,7 +236,7 @@ acre_feet <- left_join(upper_sac_flow_eff, upper_sac_flow_biop) |>
   mutate(us_acre_ft_change = us_eff - us,
          sj_acre_ft_change = sj_eff - sj)
 
-# result ks
+# result platypus
 us_mean_af_change <-  acre_feet |>
   pull(us_acre_ft_change) |> mean()
 us_mean_af_change/1000
@@ -244,6 +244,9 @@ us_mean_af_change/1000
 sj_mean_af_change <-  acre_feet |>
   pull(sj_acre_ft_change) |> mean()
 sj_mean_af_change/1000
+
+total_mean_af_change_eff <- us_mean_af_change + sj_mean_af_change
+total_mean_af_change_eff/1000
 
 water_year_types <- waterYearType::water_year_indices |>
   filter(location == "Sacramento Valley", WY %in% c(1922:2003)) |>
@@ -260,10 +263,13 @@ dry_year_acre_feet <- acre_feet |>
   mutate(us_acre_ft_change = ifelse(year_type == "Dry", us_acre_ft_change, 0),
          sj_acre_ft_change = ifelse(year_type == "Dry", sj_acre_ft_change, 0))
 
-dry_year_acre_feet |>
+us_mean_af_change_dry <- dry_year_acre_feet |>
   pull(us_acre_ft_change) |> mean() / 1000
-dry_year_acre_feet |>
+sj_mean_af_change_dry <- dry_year_acre_feet |>
   pull(sj_acre_ft_change) |> mean() / 1000
+
+total_mean_af_change_eff_dry <- us_mean_af_change_dry + sj_mean_af_change_dry
+total_mean_af_change_eff_dry
 
 # to get municipal vs ag vs wetlands, use proportion of total acre feet
 # TODO
@@ -278,7 +284,9 @@ dry_year_acre_feet |>
 all_inputs |>
   filter(performance_metric == "11 Managed Wetlands: Refuge Water Supply and Delivery") |>
   group_by(scenario) |>
-  summarise(total_deliveries_to_wetlands_TAF = sum(value, na.rm = TRUE)/1000) # convert to TAF
+  summarise(total_deliveries_to_wetlands_TAF = sum(value, na.rm = TRUE)/1000) |>  # convert to TAF
+  mutate(mean_annual_deliveries_to_wetlands_TAF = total_deliveries_to_wetlands_TAF/20) |>
+  select(-total_deliveries_to_wetlands_TAF)
 
 # 12.1 #
 # SEE new R script data-raw/terminal_hatchery_harvest.R for new harvest metrics
@@ -351,7 +359,7 @@ bind_rows(produce_weeks_flooded_pm(r_to_r_baseline_params, scenario = "Baseline"
   pivot_wider(names_from = scenario, values_from = value) |> View()
 # 16.1 #
 all_inputs |>
-  filter(performance_metric == "16.1 Delta Outflow (cfs)" ) |> glimpse()
+  filter(performance_metric == "16.1 Delta Outflow (cfs)" ) |>
   group_by(scenario, year) |>
   summarise(total_deliveries_to_mni = sum(value, na.rm = TRUE)) |>
   group_by(scenario) |>
@@ -363,38 +371,54 @@ all_inputs |>
 # Calculated as proportion total annual volume on the Sacramento, Yuba, Tuolumne. Summarized as average unimpaired flow over 20 years and all locations.
 # Calculation is not workinng saying Run of River is more impaired than Baseline - need new approach
 natural_flows <- read_csv("data-raw/natural_flows_sac.csv") |>
-  filter(comid == 2851441) |> glimpse()
+  filter(comid == 2851441) |>
+  mutate(watershed = "Upper Sacramento River") |>
+  glimpse()
 
-# TODO download natural flows for sj and produce PM separately
 # COMID 2821742
+natural_flows_sj <- read_csv("data-raw/flow_2821742_mean_estimated_1980_2000.csv") |>
+  filter(comid == 2821742) |>
+  mutate(watershed = "San Joaquin River") |>
+  glimpse()
 
 nat <- natural_flows |>
+  bind_rows(natural_flows_sj) |>
   filter(year > 1979, year < 2000) |>
   rename(flow_cfs = value) |>
-  mutate(type = "natural flow") |>
-  select(year, month, type, flow_cfs) |> glimpse()
+  mutate(scenario = "natural flow") |>
+  select(year, month, scenario, flow_cfs, watershed) |>
+  glimpse()
 
-model_flows <- left_join(upper_sac_flow_eff, upper_sac_flow_biop,
-                         upper_sac_flow_LTO_12a) |>
-  rename("eff flow" = us_eff,
-        "baseline" = us,
-        "LTO_12a" = us_lto_12a) |> # OK to keep LTO
-  pivot_longer(cols = 2:3, names_to = "type", values_to = "flow_cfs") |>
+model_flows <- left_join(upper_sac_flow_eff, upper_sac_flow_biop) |>
+  left_join(upper_sac_flow_LTO_12a) |>
+  pivot_longer(-date, names_to = "type", values_to = "flow_cfs") |>
+  mutate(watershed = ifelse(str_detect(type, "sj"),
+                            "San Joaquin River", "Upper Sacramento River"),
+         scenario = case_when(str_detect(type, "eff") ~ "EFF",
+                              str_detect(type, "lto") ~ "Elephant",
+                              TRUE ~ "Baseline")) |>
   mutate(month = month(date), year = year(date)) |>
-  select(-date) |>
+  select(-date, -type) |>
   glimpse()
 
 data <- bind_rows(model_flows, nat) |>
-  group_by(year, type) |>
+  group_by(year, scenario, watershed) |>
   summarise(total_flows = sum(flow_cfs, na.rm = TRUE)) |>
   ungroup() |>
   left_join(new_year_types) |>
-  pivot_wider(names_from = type, values_from = total_flows) |>
-  mutate(baseline_percent_of_nat_flows = baseline / `natural flow`,
-         full_eff_percent_of_nat_flows = `eff flow` / `natural flow`,
-         dry_eff_percent_of_nat_flows = ifelse(year_type == "Dry",
-                            `eff flow` / `natural flow`,
-                           baseline / `natural flow`)) |> glimpse()
+  pivot_wider(names_from = scenario, values_from = total_flows) |>
+  mutate(baseline_percent_of_nat_flows = Baseline / `natural flow`,
+            full_eff_percent_of_nat_flows = `EFF` / `natural flow`,
+            dry_eff_percent_of_nat_flows = ifelse(year_type == "Dry",
+                            `EFF` / `natural flow`, Baseline / `natural flow`),
+            elephant_percent_of_nat_flows = Elephant / `natural flow`) |>
+  group_by(watershed) |>
+  summarize(baseline_percent_of_nat_flows = mean(baseline_percent_of_nat_flows),
+         full_eff_percent_of_nat_flows = mean(full_eff_percent_of_nat_flows),
+         dry_eff_percent_of_nat_flows = mean(dry_eff_percent_of_nat_flows),
+         elephant_percent_of_nat_flows = mean(elephant_percent_of_nat_flows))
+data |>
+  glimpse()
 
 ifelse(data$baseline_percent_of_nat_flows > 1, 1, data$baseline_percent_of_nat_flows) |> mean()
 ifelse(data$full_eff_percent_of_nat_flows > 1, 1, data$full_eff_percent_of_nat_flows) |> mean()
@@ -435,7 +459,8 @@ lost_gen <- tibble(volume_af = c(49000,44000,42000,74000,
 # TODO might be better to use CalSim3 storage outputs here
 upper_sac_flow_LTO_12a <- DSMflow::flows_cfs$LTO_12a |>
   filter(year(date) > 1979, year(date) <= 2000) |>
-  select(date, us_lto_12a = `Upper Sacramento River`)
+  select(date, us_lto_12a = `Upper Sacramento River`,
+         sj_lto_12a = `San Joaquin River`)
 
 # assume flow change means loss of flow at reservoir
 flow_change <- left_join(upper_sac_flow_eff, upper_sac_flow_biop) |>
@@ -443,10 +468,15 @@ flow_change <- left_join(upper_sac_flow_eff, upper_sac_flow_biop) |>
   mutate(us_af = us * 60.370,
          us_eff_af = us_eff * 60.370,
          us_lto_af = us_lto_12a * 60.370,
+         sj_af = sj * 60.370,
+         sj_eff_af = sj_eff * 60.370,
+         sj_lto_af = sj_lto_12a * 60.370,
          # TODO eff sj relationship is based on the feather
          eff_volume_af =  ifelse(us_eff_af - us_af > 0, us_eff_af - us_af, 0),
-         lto_volume_af = ifelse(us_lto_af - us_af > 0, us_lto_af - us_af, 0)) |>
-  select(date, eff_volume_af, lto_volume_af) |> glimpse()
+         lto_volume_af = ifelse(us_lto_af - us_af > 0, us_lto_af - us_af, 0),
+         eff_volume_af_sj =  ifelse(sj_eff_af - sj_af > 0, sj_eff_af - sj_af, 0),
+         lto_volume_af_sj = ifelse(sj_lto_af - sj_af > 0, sj_lto_af - sj_af, 0)) |>
+  select(date, eff_volume_af, lto_volume_af, eff_volume_af_sj, lto_volume_af_sj) |> glimpse()
 
 power_mod <- lm(lost_gen ~ volume_af, data = lost_gen)
 # summary(power_mod)
@@ -454,26 +484,41 @@ power_gen_potential_eff <- predict(power_mod, flow_change |>
                                      select(date, volume_af = eff_volume_af))
 power_gen_potential_lto <- predict(power_mod, flow_change |>
                                      select(date, volume_af = lto_volume_af))
+power_gen_potential_eff_sj <- predict(power_mod, flow_change |>
+                                     select(date, volume_af = eff_volume_af_sj))
+power_gen_potential_lto_sj <- predict(power_mod, flow_change |>
+                                     select(date, volume_af = lto_volume_af_sj))
 
 flow_change$power_gen_potential_eff <- ifelse(power_gen_potential_eff < 0, 0, power_gen_potential_eff)
-sum(flow_change$power_gen_potential_eff)
+flow_change$power_gen_potential_eff_sj <- ifelse(power_gen_potential_eff_sj < 0, 0, power_gen_potential_eff_sj)
+sum(flow_change$power_gen_potential_eff, flow_change$power_gen_potential_eff_sj)/1e6
 
 flow_change$power_gen_potential_lto <- ifelse(power_gen_potential_lto < 0, 0, power_gen_potential_lto)
-sum(flow_change$power_gen_potential_lto)
+flow_change$power_gen_potential_lto_sj <- ifelse(power_gen_potential_lto_sj < 0, 0, power_gen_potential_lto_sj)
+sum(flow_change$power_gen_potential_lto, flow_change$power_gen_potential_lto_sj)/1e6
 
 
 # DRY YEAR ONE
 flow_change_dy <- left_join(upper_sac_flow_eff, upper_sac_flow_biop) |>
+  left_join(upper_sac_flow_LTO_12a) |>
   mutate(year = year(date)) |>
   left_join(new_year_types) |>
   mutate(us_af = us * 60.370,
          us_eff_af = us_eff * 60.370,
-         # TODO eff sj?
-         volume_af =  ifelse(us_eff_af - us_af > 0, us_eff_af - us_af, 0)) |>
-  mutate(volume_af = ifelse(year_type == "Dry", volume_af, 0)) |>
-  select(date, volume_af) |> glimpse()
+         sj_af = sj * 60.370,
+         sj_eff_af = sj_eff * 60.370,
+         volume_af =  ifelse(us_eff_af - us_af > 0, us_eff_af - us_af, 0),
+         volume_af_sj =  ifelse(sj_eff_af - sj_af > 0, sj_eff_af - sj_af, 0)) |>
+  mutate(volume_af = ifelse(year_type == "Dry", volume_af, 0),
+         volume_af_sj = ifelse(year_type == "Dry", volume_af_sj, 0)) |>
+  select(date, volume_af, volume_af_sj) |> glimpse()
 
-power_gen_potential <- predict(power_mod, flow_change_dy)
+us_flow_change <- flow_change_dy |> select(date, volume_af)
+sj_flow_change <- flow_change_dy |> select(date, volume_af = volume_af_sj)
 
-flow_change_dy$power_gen_potential <- ifelse(power_gen_potential < 0, 0, power_gen_potential)
-sum(flow_change_dy$power_gen_potential)
+power_gen_potential_us <- predict(power_mod, us_flow_change)
+power_gen_potential_sj <- predict(power_mod, sj_flow_change)
+
+us_flow_change$power_gen_potential <- ifelse(power_gen_potential_us < 0, 0, power_gen_potential_us)
+sj_flow_change$power_gen_potential <- ifelse(power_gen_potential_sj < 0, 0, power_gen_potential_sj)
+sum(us_flow_change$power_gen_potential, sj_flow_change$power_gen_potential) / 1e6

@@ -219,7 +219,33 @@ river_harvest |>
     plot.title = element_text(size = 20)
   ) +
   geom_hline(yintercept = 50000, linetype = "dashed")
-ggsave("data-raw/figures/ocean_harvest_plot_balanced.png")
+ggsave("data-raw/figures/river_harvest_plot_balanced.png")
+
+# one without platypus
+river_harvest |>
+  filter(Scenario != "Platypus") |>
+  ggplot(aes(x = years, y = river_harvest, color = Scenario)) +
+  geom_line() +
+  scale_color_manual(values = scenario_six_colors) +
+  # geom_line(data = flow_spawn_plot_data |> filter(scenario == "Baseline"), aes(x = date, y = value), color = "black", linewidth = .5, alpha = 1) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Total River Harvest Over Time",
+       y = "Harvest Totals",
+       x = "Year",
+       color = "Balanced Scenario",
+       #  caption = "Note: These numbers only reflect Upper Sacramento River Fall Run Chinook Spawners. Baseline and No Hatchery perform very simmilarly in the Upper Sacramento River."
+  ) +
+  theme_minimal() +
+  theme(
+    plot.caption = element_text(hjust = 0, face = "italic"),# move caption to the left
+    legend.position = "bottom",
+    # legend.position = "none",
+    axis.text = element_text(size = 15),
+    axis.title = element_text(size = 20),
+    plot.title = element_text(size = 20)
+  ) +
+  geom_hline(yintercept = 50000, linetype = "dashed")
+ggsave("data-raw/figures/river_harvest_plot_balanced_no_platypus.png")
 
 ocean_harvest |>
   ggplot(aes(x = years, y = ocean_harvest, color = Scenario)) +
@@ -243,5 +269,5 @@ ocean_harvest |>
     plot.title = element_text(size = 20)
   ) +
   geom_hline(yintercept = 200000, linetype = "dashed")
-ggsave("data-raw/figures/river_harvest_plot_balanced.png")
+ggsave("data-raw/figures/ocean_harvest_plot_balanced.png")
 

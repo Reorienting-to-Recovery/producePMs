@@ -80,7 +80,7 @@ fall_run_elephant_plus_results <- create_model_results_dataframe(elephant_result
 all_res <- bind_rows(fall_baseline_results, fall_run_platypus_results, fall_run_tortoise_results,
                      fall_run_elephant_results, fall_run_elephant_plus_results)
 
-write_csv(all_res, paste0("data-raw/shiny-materials/fall_blended_results_", Sys.Date(), ".csv"))
+write_csv(all_res, paste0("data-raw/shiny-materials/fall_balanced_results_", Sys.Date(), ".csv"))
 
 
 # PROCESS INPUTS ---------------------------------------------------------------

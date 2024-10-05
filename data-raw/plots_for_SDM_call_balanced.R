@@ -55,7 +55,7 @@ plot_data |>
   theme_minimal() +
   scale_color_manual(values = colors_full) +
   geom_hline(yintercept = 1, linetype = "dashed", color = "black") +
-  facet_wrap(~scenario) +
+  facet_wrap(~scenario, scales = "free") +
   labs(x = "Simulation Year",
        y = "Cohort Replacement Rate",
        title = "Total Adult to Returning Natural Adult over Simulation Period") +

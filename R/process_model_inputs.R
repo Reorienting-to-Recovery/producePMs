@@ -325,6 +325,7 @@ create_calsim_non_cvpia_nodes_tidy <- function(){
     mutate(scenario = "Elephant") |> glimpse()
 
   all_storage <- bind_rows(run_of_river_storage_data, baseline_storage_data, LTO_12a_storage_data) |>
+    filter(storage_facilities != "Engilbright") |> # remove Engilbright, bc we have it for Elephant but not others and comparison will be skewed
     mutate(af = TAF * 1000) |>
     group_by(storage_facilities, year = lubridate::year(date), scenario, nodes) |>
     summarize(volume_af = sum(af)) |>
@@ -349,35 +350,38 @@ create_calsim_non_cvpia_nodes_tidy <- function(){
 
   diff_in_power_production_max_flow <- all_storage  |>
     select(-volume_af) |>
-    pivot_wider(names_from = scenario, values_from = power_gen_potential) |>
+    pivot_wider(id_cols = c(storage_facilities, year),
+                names_from = scenario, values_from = power_gen_potential) |>
     mutate(value =  `Max Flow` - Baseline,
            performance_metric = "18 Hydropower Generation: Difference in Potential Power Produnction From Baseline",
            scenario = "Max Flow",
            location = storage_facilities,
            run = NA) |>
-    select(-`Baseline`, -`Max Flow`, -Elephant, -storage_facilities, -nodes) |>
+    select(-`Baseline`, -`Max Flow`, -Elephant, -storage_facilities) |>
     glimpse()
 
   diff_in_power_production_max_flow_max_hab <- all_storage  |>
     select(-volume_af) |>
-    pivot_wider(names_from = scenario, values_from = power_gen_potential) |>
+    pivot_wider(id_cols = c(storage_facilities, year),
+                names_from = scenario, values_from = power_gen_potential) |>
     mutate(value =  `Max Flow` - Baseline,
            performance_metric = "18 Hydropower Generation: Difference in Potential Power Produnction From Baseline",
            scenario = "Max Flow & Max Habitat",
            location = storage_facilities,
            run = NA) |>
-    select(-`Baseline`, -`Max Flow`, -Elephant, -storage_facilities, -nodes) |>
+    select(-`Baseline`, -`Max Flow`, -Elephant, -storage_facilities) |>
     glimpse()
 
   diff_in_power_production_elephant <- all_storage  |>
     select(-volume_af) |>
-    pivot_wider(names_from = scenario, values_from = power_gen_potential) |>
+    pivot_wider(id_cols = c(storage_facilities, year),
+                names_from = scenario, values_from = power_gen_potential) |>
     mutate(value =  Elephant - Baseline,
            performance_metric = "18 Hydropower Generation: Difference in Potential Power Produnction From Baseline",
            scenario = "Elephant",
            location = storage_facilities,
            run = NA) |>
-    select(-`Baseline`, -Elephant, -`Max Flow`, -storage_facilities, -nodes) |>
+    select(-`Baseline`, -Elephant, -`Max Flow`, -storage_facilities) |>
     glimpse()
 
   hydropower_pm <- bind_rows(diff_in_power_production_max_flow, diff_in_power_production_max_flow_max_hab,
@@ -430,10 +434,11 @@ create_calsim_non_cvpia_nodes_tidy <- function(){
     # fix date (excel read in wrong)
     mutate(date = as.Date(paste0(year(date) - 100, "-", month(date), "-", day(date)))) |>
     filter(year(date) %in% 1979:2000) |>
-    select(date, del_nodes_calsim3$nodes) |>
-    pivot_longer(-date, names_to = "nodes", values_to = "TAF") |>
+    select(date, all_of(ag_del_nodes_calsim3)) |>
+    pivot_longer(-date, names_to = "nodes", values_to = "CFS") |> # TODO check units
     left_join(del_nodes_calsim3) |>
-    mutate(scenario = "Elephant") |> glimpse()
+    mutate(scenario = "Elephant") |>
+    glimpse()
 
   all_ag_deleveries <- bind_rows(run_of_river_delivery_data, baseline_delivery_data,
                                  lto_12a_delivery_data) |>
@@ -509,7 +514,7 @@ create_calsim_non_cvpia_nodes_tidy <- function(){
     filter(year(date) %in% 1979:2000) |>
     select(date, all_of(refuge_del_nodes_calsim3)) |>
     pivot_longer(-date, names_to = "nodes", values_to = "CFS") |>
-    left_join(del_nodes) |>
+    left_join(del_nodes_calsim3) |>
     mutate(scenario = "Elephant") |> glimpse()
 
   all_refuge_deleveries <- bind_rows(run_of_river_delivery_data_refuge, baseline_delivery_data_refuge,
