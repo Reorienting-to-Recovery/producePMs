@@ -81,20 +81,20 @@ harvest_pm <- function() {
 
 platypus_harvest <- platypus_results$harvested_adults
 # in-river harvest is natural harvest (includes IHH and tribal and wet year cohorts)
-platypus_harvest_river <- mean(platypus_harvest$natural_harvest * in_river_harvest_percentace)
+platypus_harvest_river <- mean(platypus_harvest$total_harvest * in_river_harvest_percentace)
 # ocean harvest is terminal hatcheries in all years, plus hatchery (?)
-platypus_harvest_ocean <- mean(harvestable_ocean_terminal_hatcheries + platypus_harvest$hatchery_harvest)
+platypus_harvest_ocean <- mean(harvestable_ocean_terminal_hatcheries + platypus_harvest$total_harvest * (1- in_river_harvest_percentace))
 platypus_harvest_river
 platypus_harvest_ocean
 
-number_years_dont_meet <- (platypus_harvest$natural_harvest + (harvestable_ocean_terminal_hatcheries + platypus_harvest$hatchery_harvest))
+number_years_dont_meet <- platypus_harvest$total_harvest * in_river_harvest_percentace + harvestable_ocean_terminal_hatcheries + platypus_harvest$total_harvest * (1- in_river_harvest_percentace)
 sum(number_years_dont_meet[6:20] > 250000) / 15 * 100
 
-number_years_dont_meet_river <- (platypus_harvest$natural_harvest)
+number_years_dont_meet_river <- platypus_harvest$total_harvest * in_river_harvest_percentace
 sum(number_years_dont_meet_river[6:20] > 50000) / 15 * 100
 number_years_dont_meet_river[6:20] < 50000
 
-number_years_dont_meet_ocean <- (harvestable_ocean_terminal_hatcheries + platypus_harvest$hatchery_harvest)
+number_years_dont_meet_ocean <- harvestable_ocean_terminal_hatcheries + platypus_harvest$total_harvest * (1- in_river_harvest_percentace)
 sum(number_years_dont_meet_ocean[6:20] > 200000) / 15 * 100
 number_years_dont_meet_ocean[6:20] < 200000
 
@@ -184,14 +184,14 @@ colSums(tortoise_results$spawners * .08, na.rm = TRUE)
 
 river_harvest <- tibble(years = 1:20,
                         Baseline = (baseline_harvest$total_harvest * in_river_harvest_percentace),
-                        "Platypus" = (platypus_harvest$natural_harvest),
+                        "Platypus" = (platypus_harvest$total_harvest * in_river_harvest_percentace),
                         "Elephant" = (elephant_harvest$total_harvest * in_river_harvest_percentace),
                         "Tortoise" = (tortoise_harvest$total_harvest * in_river_harvest_percentace)) |>
   pivot_longer(Baseline:Tortoise, names_to = "Scenario", values_to = "river_harvest") |> glimpse()
 
 ocean_harvest <- tibble(years = 1:20,
                         Baseline = (baseline_harvest$total_harvest * (1 - in_river_harvest_percentace)),
-                        "Platypus" = (harvestable_ocean_terminal_hatcheries + platypus_harvest$hatchery_harvest),
+                        "Platypus" = (harvestable_ocean_terminal_hatcheries + platypus_harvest$total_harvest * (1- in_river_harvest_percentace)),
                         "Elephant" = (phased_harvestable_ocean_terminal_hatcheries + (elephant_harvest$total_harvest * (1 - in_river_harvest_percentace))),
                         "Tortoise" = (phased_harvestable_ocean_terminal_hatcheries + (tortoise_harvest$total_harvest * (1 - in_river_harvest_percentace)))) |>
   pivot_longer(Baseline:`Tortoise`, names_to = "Scenario", values_to = "ocean_harvest") |> glimpse()
@@ -221,31 +221,6 @@ river_harvest |>
   geom_hline(yintercept = 50000, linetype = "dashed")
 ggsave("data-raw/figures/river_harvest_plot_balanced.png")
 
-# one without platypus
-river_harvest |>
-  filter(Scenario != "Platypus") |>
-  ggplot(aes(x = years, y = river_harvest, color = Scenario)) +
-  geom_line() +
-  scale_color_manual(values = scenario_six_colors) +
-  # geom_line(data = flow_spawn_plot_data |> filter(scenario == "Baseline"), aes(x = date, y = value), color = "black", linewidth = .5, alpha = 1) +
-  scale_y_continuous(labels = scales::comma) +
-  labs(title = "Total River Harvest Over Time",
-       y = "Harvest Totals",
-       x = "Year",
-       color = "Balanced Scenario",
-       #  caption = "Note: These numbers only reflect Upper Sacramento River Fall Run Chinook Spawners. Baseline and No Hatchery perform very simmilarly in the Upper Sacramento River."
-  ) +
-  theme_minimal() +
-  theme(
-    plot.caption = element_text(hjust = 0, face = "italic"),# move caption to the left
-    legend.position = "bottom",
-    # legend.position = "none",
-    axis.text = element_text(size = 15),
-    axis.title = element_text(size = 20),
-    plot.title = element_text(size = 20)
-  ) +
-  geom_hline(yintercept = 50000, linetype = "dashed")
-ggsave("data-raw/figures/river_harvest_plot_balanced_no_platypus.png")
 
 ocean_harvest |>
   ggplot(aes(x = years, y = ocean_harvest, color = Scenario)) +
