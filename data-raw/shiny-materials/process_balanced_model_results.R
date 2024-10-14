@@ -39,13 +39,13 @@ elephant_results <- fallRunDSM::fall_run_model(mode = "simulate",
                                                scenario = "elephant",
                                                ..params = new_params_baseline,
                                                seeds = baseline_seeds,
-                                               delta_surv_inflation = TRUE)
+                                               delta_surv_inflation = FALSE)
 
-elephant_plus_results <- fallRunDSM::fall_run_model(mode = "simulate",
-                                                   scenario = "elephant_plus",
-                                                   ..params = new_params_baseline,
-                                                   seeds = baseline_seeds,
-                                                   delta_surv_inflation = TRUE)
+# elephant_plus_results <- fallRunDSM::fall_run_model(mode = "simulate",
+#                                                    scenario = "elephant_plus",
+#                                                    ..params = new_params_baseline,
+#                                                    seeds = baseline_seeds,
+#                                                    delta_surv_inflation = FALSE)
 
 tortoise_results <- fallRunDSM::fall_run_model(mode = "simulate",
                                                scenario = "tortoise",
@@ -72,13 +72,13 @@ fall_run_elephant_results <- create_model_results_dataframe(elephant_results,
                                                                                              species = "fr"),
                                                             "Elephant", selected_run = "fall")
 
-fall_run_elephant_plus_results <- create_model_results_dataframe(elephant_results,
-                                                            model_parameters = load_scenario(R2Rscenario::scenarios$balanced_scenarios$elephant_plus,
-                                                                                             species = "fr"),
-                                                            "Elephant Plus", selected_run = "fall")
+# fall_run_elephant_plus_results <- create_model_results_dataframe(elephant_plus_results,
+#                                                             model_parameters = load_scenario(R2Rscenario::scenarios$balanced_scenarios$elephant_plus,
+#                                                                                              species = "fr"),
+#                                                             "Elephant Plus", selected_run = "fall")
 
 all_res <- bind_rows(fall_baseline_results, fall_run_platypus_results, fall_run_tortoise_results,
-                     fall_run_elephant_results, fall_run_elephant_plus_results)
+                     fall_run_elephant_results)#, fall_run_elephant_plus_results)
 
 write_csv(all_res, paste0("data-raw/shiny-materials/fall_balanced_results_", Sys.Date(), ".csv"))
 
@@ -99,9 +99,9 @@ fall_run_elephant_inputs <- create_model_inputs_tidy_df(model_parameters = load_
                                                                                          species = "fr"),
                                                         "Elephant", selected_run = "fall")
 
-fall_run_elephant_plus_inputs <- create_model_inputs_tidy_df(model_parameters = load_scenario(R2Rscenario::scenarios$balanced_scenarios$elephant_plus,
-                                                                                         species = "fr"),
-                                                        "Elephant Plus", selected_run = "fall")
+# fall_run_elephant_plus_inputs <- create_model_inputs_tidy_df(model_parameters = load_scenario(R2Rscenario::scenarios$balanced_scenarios$elephant_plus,
+#                                                                                          species = "fr"),
+#                                                         "Elephant Plus", selected_run = "fall")
 
 # Add inputs for storage and deliveries from calsim nodes not within model parameters
 # Files for generating the create calsim non cvia are in data raw
@@ -111,7 +111,7 @@ calsim_inputs <- create_calsim_non_cvpia_nodes_tidy() |>
 
 
 all_inputs <- bind_rows(fall_baseline_inputs, fall_run_platypus_inputs, fall_run_tortoise_inputs, calsim_inputs,
-                        fall_run_elephant_inputs, fall_run_elephant_plus_inputs)
+                        fall_run_elephant_inputs)#, fall_run_elephant_plus_inputs)
 
 write_csv(all_inputs, paste0("data-raw/shiny-materials/fall_balanced_inputs_", Sys.Date(), ".csv"))
 

@@ -125,7 +125,7 @@ sum(number_years_dont_meet_ocean[6:20] > 200000) / 15 * 100
 number_years_dont_meet_ocean[6:20] < 200000
 
 # ELEPHANT PLUS ----------------------------------------------------------------
-# intelligent CRR
+# intelligent habitat harvest
 # tribal harvest
 # phased hatchery
 
@@ -185,21 +185,24 @@ colSums(tortoise_results$spawners * .08, na.rm = TRUE)
 river_harvest <- tibble(years = 1:20,
                         Baseline = (baseline_harvest$total_harvest * in_river_harvest_percentace),
                         "Platypus" = (platypus_harvest$total_harvest * in_river_harvest_percentace),
-                        "Elephant" = (elephant_harvest$total_harvest * in_river_harvest_percentace),
-                        "Tortoise" = (tortoise_harvest$total_harvest * in_river_harvest_percentace)) |>
+                        #"Elephant" = (elephant_harvest$total_harvest * in_river_harvest_percentace),
+                        #"Elephant Plus" = (elephant_plus_harvest$total_harvest * in_river_harvest_percentace),
+                        "Tortoise" = (tortoise_harvest$total_harvest * in_river_harvest_percentace)
+                        ) |>
   pivot_longer(Baseline:Tortoise, names_to = "Scenario", values_to = "river_harvest") |> glimpse()
 
 ocean_harvest <- tibble(years = 1:20,
                         Baseline = (baseline_harvest$total_harvest * (1 - in_river_harvest_percentace)),
                         "Platypus" = (harvestable_ocean_terminal_hatcheries + platypus_harvest$total_harvest * (1- in_river_harvest_percentace)),
-                        "Elephant" = (phased_harvestable_ocean_terminal_hatcheries + (elephant_harvest$total_harvest * (1 - in_river_harvest_percentace))),
+                        #"Elephant" = (phased_harvestable_ocean_terminal_hatcheries + (elephant_harvest$total_harvest * (1 - in_river_harvest_percentace))),
+                        #"Elephant Plus" = (phased_harvestable_ocean_terminal_hatcheries + (elephant_plus_harvest$total_harvest * (1 - in_river_harvest_percentace))),
                         "Tortoise" = (phased_harvestable_ocean_terminal_hatcheries + (tortoise_harvest$total_harvest * (1 - in_river_harvest_percentace)))) |>
   pivot_longer(Baseline:`Tortoise`, names_to = "Scenario", values_to = "ocean_harvest") |> glimpse()
 scenario_six_colors <- c("#02401B", "#9A8822", "#798E87", "#5B1A18","#972D15", "#DC863B", "#AA9486")
 
 river_harvest |>
   ggplot(aes(x = years, y = river_harvest, color = Scenario)) +
-  geom_line() +
+  geom_line(linewidth = 1) +
   scale_color_manual(values = scenario_six_colors) +
   # geom_line(data = flow_spawn_plot_data |> filter(scenario == "Baseline"), aes(x = date, y = value), color = "black", linewidth = .5, alpha = 1) +
   scale_y_continuous(labels = scales::comma) +
@@ -224,7 +227,7 @@ ggsave("data-raw/figures/river_harvest_plot_balanced.png")
 
 ocean_harvest |>
   ggplot(aes(x = years, y = ocean_harvest, color = Scenario)) +
-  geom_line() +
+  geom_line(linewidth = 1) +
   scale_color_manual(values = scenario_six_colors) +
   # geom_line(data = flow_spawn_plot_data |> filter(scenario == "Baseline"), aes(x = date, y = value), color = "black", linewidth = .5, alpha = 1) +
   scale_y_continuous(labels = scales::comma) +

@@ -27,7 +27,10 @@ muted = c("Critical" = "#972D15",
           "Below Normal" = "#A2A475",
           "Above Normal" ="#81A88D",
           "Wet" ="#02401B",
-          "Run of River" = "#899DA4", "Biop (Baseline)" = "#7294D4")
+          "Run of River" = "#899DA4",
+          "Biop (Baseline)" = "#7294D4",
+          "LTO_12a" = "#08519C",
+          "FF" = "#9ECAE1")
 
 blues <- c( "Run of River" = "#899DA4", "Biop (Baseline)" = "#7294D4")
 # GENERAL PLOTS
@@ -46,16 +49,16 @@ blues <- c( "Run of River" = "#899DA4", "Biop (Baseline)" = "#7294D4")
 plot_data <- all_res |>
   filter(performance_metric == "2.1 CRR: Total Adult to Returning Natural Adult",
          location %in% c("Upper Sacramento River", "Stanislaus River", "Tuolumne River", "American River"),
-         scenario %in% c("Baseline", "Platypus", "Tortoise", "Elephant"))  |>
+         scenario %in% c("Baseline", "Platypus", "Tortoise")) |> #, "Elephant", "Elephant Plus"))  |>
   glimpse()
 
 plot_data |>
   ggplot(aes(x = year, y = value, color = location)) +
-  geom_line() +
+  geom_line(linewidth = 1) +
   theme_minimal() +
   scale_color_manual(values = colors_full) +
   geom_hline(yintercept = 1, linetype = "dashed", color = "black") +
-  facet_wrap(~scenario, scales = "free") +
+  facet_wrap(~scenario, nrow = 3) +
   labs(x = "Simulation Year",
        y = "Cohort Replacement Rate",
        title = "Total Adult to Returning Natural Adult over Simulation Period") +
@@ -63,7 +66,8 @@ plot_data |>
     plot.caption = element_text(hjust = 0, face = "italic"),# move caption to the left
     axis.text = element_text(size = 15),
     axis.title = element_text(size = 20),
-    plot.title = element_text(size = 20)
+    plot.title = element_text(size = 20),
+    legend.position = "bottom"
   )
 
 ggsave("data-raw/figures/crr_plot_balanced.png")
@@ -81,7 +85,7 @@ ggsave("data-raw/figures/crr_plot_balanced.png")
 plot_data <- all_res |>
   filter(performance_metric == "2.2 Growth Rate Spawners",
          location %in% c("Upper Sacramento River", "Stanislaus River", "Tuolumne River", "American River"),
-         scenario %in% c("Baseline", "Platypus", "Tortoise", "Elephant"))  |>
+         scenario %in% c("Baseline", "Platypus", "Tortoise", "Elephant", "Elephant Plus"))  |>
   glimpse()
 
 plot_data |>
@@ -90,7 +94,7 @@ plot_data |>
   theme_minimal() +
   scale_color_manual(values = colors_full) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
-  facet_wrap(~scenario) +
+  facet_wrap(~scenario, scales = "free") +
   labs(x = "Simulation Year",
        y = "Growth Rate",
        title = "Growth Rate over Simulation Period") +
@@ -98,7 +102,8 @@ plot_data |>
     plot.caption = element_text(hjust = 0, face = "italic"),# move caption to the left
     axis.text = element_text(size = 15),
     axis.title = element_text(size = 20),
-    plot.title = element_text(size = 20)
+    plot.title = element_text(size = 20),
+    legend.position = "bottom"
   )
 
 ggsave("data-raw/figures/growth_rate_plot_balanced.png")
@@ -143,7 +148,7 @@ year_lookup <- tibble(year = 1:21,
                       actual_year = 1980:2000)
 flow_spawn_plot_data <- all_res |>
   filter(performance_metric == "1 All Spawners",
-         scenario %in% c("Baseline", "Platypus", "Tortoise", "Elephant")) |>
+         scenario %in% c("Baseline", "Platypus", "Tortoise", "Elephant", "Elephant Plus")) |>
   group_by(year, scenario, run) |>
   summarize(value = sum(value, na.rm = TRUE)) |>
   left_join(year_lookup) |>
@@ -182,9 +187,10 @@ ggplot() +
 
 # JUST HYDROLOGY
 ggplot() +
-  geom_area(data = flow_data, aes(x = date, y = flow_cfs, fill = Hydrology), alpha = .5, position = "identity") +
+  geom_area(data = flow_data, aes(x = date, y = flow_cfs, color = Hydrology), alpha = .3,
+            position = "identity", fill = "lightgray") +
   # geom_col(data = flow_data, aes(x = date, y = -4000, fill = year_type), alpha = 1, width = 31) +
-  scale_fill_manual(values = muted,
+  scale_color_manual(values = muted,
                     limits = c("EFF", "Biop (Baseline)", "LTO_12a")
                     ) +
   # geom_line(data = flow_data, aes(x = date, y = flow_cfs), color = "black", linewidth = .1) +
@@ -193,7 +199,7 @@ ggplot() +
   # geom_line(data = flow_spawn_plot_data |> filter(scenario == "Baseline"), aes(x = date, y = value), color = "black", linewidth = .5, alpha = 1) +
   scale_y_continuous(labels = scales::comma) +
   labs(title = "Sacramento and San Joaquin River Flows",
-       subtitle = "Baseline, EFF, and LTO 12a",
+       subtitle = "Baseline, FF, and LTO 12a",
        y = "Flow CFS",
        x = "Year",
        # linetype = "Bookend Scenario",
@@ -216,7 +222,36 @@ doubling_goal <- sum(3300, 9300, 2200, 38000, 22000, 18000, 170000, 66000, 450,
                      160000, 258700, 720, 4200, 1500, 1500, 800)
 all_res |>
   filter(performance_metric == "1 All Spawners",
+         !scenario %in% c("Elephant"), # do not include Elephant for SDM working group call
          !scenario %in% c("Planned Plus", "Dry Year with Projects"),
+         !location %in% c("Stoney Creek", "Thomes Creek")) |>
+  group_by(year, scenario, run) |>
+  summarize(value = sum(value, na.rm = TRUE)) |>
+  left_join(year_lookup) |>
+  mutate(date = as.Date(paste0(actual_year, "-12-31"))) |>
+  ggplot() +
+  geom_line(aes(x = date, y = value, color = scenario),linewidth = 1, alpha = 1) +
+  scale_color_manual(values = scenario_six_colors) +
+  scale_y_continuous(labels = scales::comma) +
+  labs(title = "Total Spawner Abundance over Time",
+       y = "Spawner Abundance",
+       x = "Year",
+       color = "Blended Scenario" ) +
+  geom_hline(yintercept = doubling_goal, linetype = "dashed") +
+  theme_minimal() +
+  theme(
+    plot.caption = element_text(hjust = 0, face = "italic"),# move caption to the left
+    legend.position = "bottom",
+    axis.text = element_text(size = 15),
+    axis.title = element_text(size = 20),
+    plot.title = element_text(size = 20)
+  )
+ggsave("data-raw/figures/doubling_goal_balanced.png")
+
+# plot elephant by itself
+all_res |>
+  filter(performance_metric == "1 All Spawners",
+         scenario %in% c("Baseline", "Elephant"),
          !location %in% c("Stoney Creek", "Thomes Creek")) |>
   group_by(year, scenario, run) |>
   summarize(value = sum(value, na.rm = TRUE)) |>
@@ -239,7 +274,8 @@ all_res |>
     axis.title = element_text(size = 20),
     plot.title = element_text(size = 20)
   )
-ggsave("data-raw/figures/doubling_goal_balanced.png")
+
+ggsave("data-raw/figures/doubling_goal_balanced_elephant.png")
 
 # flow_spawn_plot_data <- all_res |>
 #   filter(performance_metric == "1 All Spawners",
@@ -283,26 +319,30 @@ percent_diff <- function(old_value, new_value) {
 # create spawner
 spawners_per_dif <- all_res |>
   filter(performance_metric == "1 All Spawners",
-         scenario %in% c("Baseline", "Platypus", "Tortoise", "Elephant"))  |>
+         scenario %in% c("Baseline", "Platypus", "Tortoise")) |>  # "Elephant")) |> "Elephant Plus"))  |>
   pivot_wider(names_from = scenario, values_from = value) |>
   group_by(year) |>
   summarize(`Baseline` = sum(`Baseline`, na.rm = TRUE),
             `Platypus` = sum(`Platypus`, na.rm = TRUE),
-            `Tortoise` = sum(`Tortoise`, na.rm = TRUE),
-            `Elephant` = sum(`Elephant`, na.rm = TRUE)) |>
+            `Tortoise` = sum(`Tortoise`, na.rm = TRUE)
+            #`Elephant` = sum(`Elephant`, na.rm = TRUE)
+            #`Elephant Plus` = sum(`Elephant Plus`, na.rm = TRUE)
+            ) |>
   mutate(`Tortoise` = percent_diff(`Baseline`, `Tortoise`),
-         `Platypus` = percent_diff(`Baseline`, `Platypus`),
-         `Elephant` = percent_diff(`Baseline`, `Elephant`)) |>
-  pivot_longer(`Platypus`:`Elephant`, names_to = "scenario", values_to = "value") |> glimpse()
+         `Platypus` = percent_diff(`Baseline`, `Platypus`)
+         #`Elephant Plus` = percent_diff(`Baseline`, `Elephant Plus`),
+         #`Elephant` = percent_diff(`Baseline`, `Elephant`)
+         ) |>
+  pivot_longer(`Tortoise`:`Platypus`, names_to = "scenario", values_to = "value") |> glimpse()
 
 ggplot() +
   geom_line(data = spawners_per_dif, aes(x = year, y = value, color = scenario),linewidth = .5, alpha = 1) +
   scale_color_manual(values = scenario_six_colors) +
   scale_y_continuous(labels = scales::comma) +
-  labs(title = "Relative Change from Baseline",
-       y = "Relative Change from Baseline",
+  labs(title = "Percent Change from Baseline",
+       y = "Percent Change from Baseline",
        x = "Year",
-       color = "Blended Scenario",
+       color = "Balanced Scenario",
   ) +
   theme_minimal() +
   theme(
@@ -361,7 +401,7 @@ leaflet() %>%
 diversity_groups <- fallRunDSM::diversity_group
 fish_present_data <- all_res |>
   filter(performance_metric == "1 All Spawners",
-         scenario %in% c("Baseline", "Platypus", "Tortoise", "Elephant")) |>
+         scenario %in% c("Baseline", "Platypus", "Tortoise", "Elephant", "Elephant Plus")) |>
   mutate(scenario = case_when(scenario == "Max Flow" ~ "Run of River",
                               scenario == "Max Flow & Max Habitat" ~ "Run of River & Max Habitat",
                               scenario == "Theoretical Max Habitat" ~ "Max Habitat",
@@ -433,8 +473,8 @@ plot_data <- all_inputs |>
 #
 # Max Hab - PHOS ---
 phos_plot_data <- all_res |>
-  filter(performance_metric %in% c("4 PHOS", "1 All Spawners"),,
-         scenario %in% c("Baseline", "Platypus", "Tortoise", "Elephant")) |>
+  filter(performance_metric %in% c("4 PHOS", "1 All Spawners"),
+         scenario %in% c("Baseline", "Platypus", "Tortoise")) |> #, "Elephant", "Elephant Plus")) |>
          # location %in% c("Clear Creek", "Yuba River", "Feather River", "American River")
   pivot_wider(names_from = performance_metric, values_from = value) |>
   group_by(scenario, year) |>
@@ -447,7 +487,7 @@ phos_plot_data <- all_res |>
 
 phos_plot_data |>
   ggplot(aes(x = year, y = value, color = scenario)) +
-  geom_line() +
+  geom_line(linewidth = 1) +
   theme_minimal() +
   scale_color_manual(values = colors_full) +
   geom_hline(yintercept = .05, linetype = "dashed", color = "black") +
@@ -475,7 +515,7 @@ scenarios = "Baseline"
 plot_data_juvs <- all_res |>
   filter(performance_metric == "Juveniles Size at Ocean Entry",
          location == "Upper Sacramento River",
-         scenario %in% c("Baseline", "Platypus", "Tortoise", "Elephant")) |>
+         scenario %in% c("Baseline", "Platypus", "Tortoise", "Elephant", "Elephant Plus")) |>
   group_by(month, scenario, size_or_age) |>
   summarize(total_count = round(sum(value, na.rm = TRUE))) |>
   ungroup() |>

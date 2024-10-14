@@ -14,10 +14,10 @@ params_list <- c(fall_baseline_results,
 scenarios_lists <- c("Baseline",
                      "Platypus",
                      "Tortoise",
-                     "Elephant",
-                     "Elephant Plus"
+                     "Elephant"
+                     #"Elephant Plus"
 )
-run_list <- c("fall", "fall", "fall", "fall", "fall")
+run_list <- c("fall", "fall", "fall", "fall")#, "fall")
 
 r_to_r_platypus_params <- load_scenario(R2Rscenario::scenarios$balanced_scenarios$platypus,
                                         species = "fr")
@@ -25,13 +25,13 @@ r_to_r_tortoise_params <- load_scenario(R2Rscenario::scenarios$balanced_scenario
                                         species = "fr")
 r_to_r_elephant_params <- load_scenario(R2Rscenario::scenarios$balanced_scenarios$elephant,
                                         species = "fr")
-r_to_r_elephant_plus_params <- load_scenario(R2Rscenario::scenarios$balanced_scenarios$elephant_plus,
-                                             species = "fr")
+# r_to_r_elephant_plus_params <- load_scenario(R2Rscenario::scenarios$balanced_scenarios$elephant_plus,
+#                                              species = "fr")
 ### Biological Objectives ### --------------------------------------------------
 # 1 #
 #
 produce_spawner_abundance_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant", "Elephant Plus"))) |>
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |>
   pivot_longer(2:4, names_to = "type", values_to = "value") |>
   pivot_wider(names_from = scenario, values_from = value) |>
   mutate_if(is.numeric, pretty_num) |> View()
@@ -45,7 +45,7 @@ produce_spawner_abundance_pm(all_res) |>
 
 # redo with geometric mean
 produce_crr_geometric_mean_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant", "Elephant Plus"))) |>
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |>
   pivot_longer(2:4, names_to = "type", values_to = "value") |>
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
@@ -53,7 +53,7 @@ produce_crr_geometric_mean_pm(all_res) |>
 # 2.2 #
 # Average growth rate central valley wide
 produce_growth_rate_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant", "Elephant Plus"))) |>
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |>
   pivot_longer(2:4, names_to = "type", values_to = "value") |>
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
@@ -61,26 +61,26 @@ produce_growth_rate_pm(all_res) |>
 # 3.1 #
 # Number of independent pops
 produce_independent_pops_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant", "Elephant Plus"))) |> View()
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |> View()
 
 # 3.1.1
 produce_populations_present_pm(all_res)
 # 3.2 #
 # of potential independent viable populations in each diversity group per ESU/run
 produce_independent_pops_per_diversity_group_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant", "Elephant Plus"))) |> View()
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |> View()
 
 # LOoks like now this is total independent / possible ind (looks like possible ind 20 tribs * 16 years (only possible to meet criteria in 16 years)) so 320
 
 # 3.3 #
 # number dependent pops
 produce_dependent_pops_per_diversity_group_pm(all_res, selected_run = "fall") |>
-  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant", "Elephant Plus"))) |> View()
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |> View()
 
 # 4 #
 # PHOS
 produce_phos_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant", "Elephant Plus"))) |>
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |>
   pivot_longer(3:5, names_to = "type", values_to = "value") |>
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
@@ -88,19 +88,19 @@ produce_phos_pm(all_res) |>
 # 5.1 #
 # Age distribution of spawning adults
 produce_categorical_return_age_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant", "Elephant Plus"))) |> View()
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |> View()
 
 # 5.2 #
 # shannon diversity index
 produce_shannon_div_ind_size_pm(all_res) |>
   mutate_if(is.numeric, pretty_num) |>
-  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant", "Elephant Plus"))) |> View()
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |> View()
 
 # 5.3 #
 # size distribution & month of juveniles
 produce_shannon_div_ind_size_and_timing_pm(all_res) |>
   mutate_if(is.numeric, pretty_num) |>
-  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant", "Elephant Plus"))) |> View()
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |> View()
 
 # 5.4 #
 produce_floodplain_over_inchannel_habitat(fall_baseline_results, r_to_r_baseline_params, "fall", "Baseline") |>
@@ -120,7 +120,7 @@ produce_floodplain_over_inchannel_habitat(fall_run_pc_results, r_to_r_planned_an
 # marine derived nutrient
 produce_marine_nutrient_pm(all_res) |>
   mutate_if(is.numeric, pretty_num) |>
-  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant", "Elephant Plus"))) |> View()
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |> View()
 
 # 7 #
 # # time to recovery
@@ -148,10 +148,8 @@ bind_rows(produce_juvenile_wetted_acre_day_pm(r_to_r_baseline_params, scenario =
           produce_juvenile_wetted_acre_day_pm(r_to_r_tortoise_params,
                                               scenario = "Tortoise", selected_run = "fall"),
           produce_juvenile_wetted_acre_day_pm(r_to_r_elephant_params,
-                                              scenario = "Elephant", selected_run = "fall"),
-          produce_juvenile_wetted_acre_day_pm(r_to_r_elephant_plus_params,
-                                              scenario = "Elephant Plus", selected_run = "fall")) |>
-  arrange(factor(scenario, levels = c("Baseline", "Tortoise", "Platypus", "Elephant", "Elephant Plus"))) |>
+                                              scenario = "Elephant", selected_run = "fall")) |>
+  arrange(factor(scenario, levels = c("Baseline", "Tortoise", "Platypus", "Elephant"))) |>
   pivot_longer(3:5, names_to = "type", values_to = "value") |>
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
@@ -163,9 +161,8 @@ produce_spawning_wetted_acre_day_pm(model_params, scenario = "Baseline", selecte
 bind_rows(produce_spawning_wetted_acre_day_pm(r_to_r_baseline_params, scenario = "Baseline", selected_run = "fall"),
           produce_spawning_wetted_acre_day_pm(r_to_r_platypus_params, scenario = "Platypus", selected_run = "fall"),
           produce_spawning_wetted_acre_day_pm(r_to_r_tortoise_params, scenario = "Tortoise", selected_run = "fall"),
-          produce_spawning_wetted_acre_day_pm(r_to_r_elephant_params, scenario = "Elephant", selected_run = "fall"),
-          produce_spawning_wetted_acre_day_pm(r_to_r_elephant_plus_params, scenario = "Elephant Plus", selected_run = "fall")) |>
-  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant", "Elephant Plus"))) |>
+          produce_spawning_wetted_acre_day_pm(r_to_r_elephant_params, scenario = "Elephant", selected_run = "fall")) |>
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus", "Elephant"))) |>
   pivot_longer(3:5, names_to = "type", values_to = "value") |>
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
@@ -177,18 +174,16 @@ bind_rows(produce_spawning_wetted_acre_day_pm(r_to_r_baseline_params, scenario =
 bind_rows(total_habitat_decay(r_to_r_baseline_params, scenario = "Baseline", "fall"),
           total_habitat_decay(r_to_r_platypus_params, scenario = "Platypus", "fall"),
           total_habitat_decay(r_to_r_tortoise_params, scenario = "Tortoise", "fall"),
-          total_habitat_decay(r_to_r_elephant_params, scenario = "Elephant", "fall"),
-          total_habitat_decay(r_to_r_elephant_plus_params, scenario = "Elephant Plus", "fall")) |>
-  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant", "Elephant Plus"))) |> View()
+          total_habitat_decay(r_to_r_elephant_params, scenario = "Elephant", "fall")) |>
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |> View()
 # 9.1
 # Wetted acre days - total days floodplain activation occurs
 produce_wetted_acre_day_floodplain_activation_pm(r_to_r_baseline_params, scenario = "Baseline", selected_run = "fall")
 bind_rows(produce_wetted_acre_day_floodplain_activation_pm(r_to_r_baseline_params, scenario = "Baseline", selected_run = "fall"),
           produce_wetted_acre_day_floodplain_activation_pm(r_to_r_platypus_params, scenario = "Platypus", selected_run = "fall"),
           produce_wetted_acre_day_floodplain_activation_pm(r_to_r_tortoise_params, scenario = "Tortoise", selected_run = "fall"),
-          produce_wetted_acre_day_floodplain_activation_pm(r_to_r_elephant_params, scenario = "Elephant", selected_run = "fall"),
-          produce_wetted_acre_day_floodplain_activation_pm(r_to_r_elephant_plus_params, scenario = "Elephant Plus", selected_run = "fall")) |>
-  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant", "Elephant Plus"))) |>
+          produce_wetted_acre_day_floodplain_activation_pm(r_to_r_elephant_params, scenario = "Elephant", selected_run = "fall")) |>
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |>
   pivot_longer(3:5, names_to = "type", values_to = "value") |>
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
@@ -203,9 +198,8 @@ produce_2yr_30d_floodplain_acres_pm
 bind_rows(produce_2yr_30d_floodplain_acres_pm(r_to_r_baseline_params, scenario = "Baseline", selected_run = "fall"),
           produce_2yr_30d_floodplain_acres_pm(r_to_r_platypus_params, scenario = "Platypus", selected_run = "fall"),
           produce_2yr_30d_floodplain_acres_pm(r_to_r_tortoise_params, scenario = "Tortoise", selected_run = "fall"),
-          produce_2yr_30d_floodplain_acres_pm(r_to_r_elephant_params, scenario = "Elephant", selected_run = "fall"),
-          produce_2yr_30d_floodplain_acres_pm(r_to_r_elephant_plus_params, scenario = "Elephant Plus", selected_run = "fall")) |>
-  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant", "Elephant Plus"))) |>
+          produce_2yr_30d_floodplain_acres_pm(r_to_r_elephant_params, scenario = "Elephant", selected_run = "fall")) |>
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |>
   pivot_longer(3, names_to = "type", values_to = "value") |>
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
@@ -294,13 +288,13 @@ all_inputs |>
 # Annual number of adults in rivers
 # (above abundance numbers required to meet biological objectives)
 produce_spawner_abundance_above_biological_objective_river_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant", "Elephant Plus"))) |>
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |>
   pivot_longer(2:4, names_to = "type", values_to = "value") |>
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
 
 produce_spawner_abundance_above_biological_objective_ocean_pm(all_res) |>
-  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant", "Elephant Plus"))) |>
+  arrange(factor(scenario, levels = c("Baseline","Tortoise", "Platypus",  "Elephant"))) |>
   pivot_longer(2:4, names_to = "type", values_to = "value") |>
   mutate_if(is.numeric, pretty_num) |>
   pivot_wider(names_from = scenario, values_from = value) |> View()
