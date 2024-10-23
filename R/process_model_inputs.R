@@ -279,11 +279,11 @@ create_calsim_non_cvpia_nodes_tidy <- function(){
                                                                    "New Hogan",
                                                                    "New Melones",
                                                                    "New Don Padro",
-                                                                   "Lake McClure"),
-                                                                   #"Friant"), # missing friant!
+                                                                   "Lake McClure",
+                                                                   "Friant")
                                                     nodes = c("S_WKYTN", "S_SHSTA", "S_KSWCK", "S_THRMA", "S_OROVL", "S_SGRGE",
                                                               "S_ENGLB", "S_FOLSM", "S_NHGAN", "S_MELON", "S_PEDRO",
-                                                              "S_MCLRE"))
+                                                              "S_MCLRE", "S_MLRTN"))
 
   storage_nodes_calsim_3 <- map_nodes_to_storage_facilities_calsim3$nodes
 
@@ -537,6 +537,7 @@ create_calsim_non_cvpia_nodes_tidy <- function(){
   # delta total outflow
   # TODO still missing this node for CalSim3
   delta_outflow_node <- c("C407")
+  delta_outflow_node_calsim3 <- c("NDOI_ADD")
   run_of_river_delta_outflow <- pick_columns("data-raw/run_of_river_delta_outflow.xlsx", delta_outflow_node) |>
     pivot_longer(-date, names_to = "nodes", values_to = "CFS") |>
     left_join(del_nodes) |>
@@ -545,8 +546,17 @@ create_calsim_non_cvpia_nodes_tidy <- function(){
     pivot_longer(-date, names_to = "nodes", values_to = "CFS") |>
     left_join(del_nodes) |>
     mutate(scenario = "Baseline") |> glimpse()
+  lto_12a_delta_outflow <- readxl::read_excel(here::here("data-raw", "calsim3-data", "HRL-deliveries-swp-cvp.xlsx")) |>
+    # fix date (excel read in wrong)
+    mutate(date = as.Date(paste0(year(date) - 100, "-", month(date), "-", day(date)))) |>
+    filter(year(date) %in% 1979:2000) |>
+    select(date, all_of(delta_outflow_node_calsim3)) |>
+    pivot_longer(-date, names_to = "nodes", values_to = "CFS") |>
+    left_join(del_nodes_calsim3) |>
+    mutate(scenario = "Elephant") |> glimpse()
 
-  all_delta_outflows <- bind_rows(run_of_river_delta_outflow, baseline_delta_outflow) |>
+  all_delta_outflows <- bind_rows(run_of_river_delta_outflow, baseline_delta_outflow,
+                                  lto_12a_delta_outflow) |>
     mutate(cfs = CFS) |>
     group_by(location, year = lubridate::year(date), scenario) |>
     summarize(cfs = mean(cfs, na.rm = TRUE)) |>
