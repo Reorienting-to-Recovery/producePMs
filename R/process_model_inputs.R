@@ -220,12 +220,13 @@ create_model_inputs_tidy_df <- function(model_parameters, scenario_name, selecte
      pivot_longer(cols = -c(location, habitat_type), names_to = "year_date", values_to = "weeks_flooded") |>
      separate(year_date, into = c("month", "year")) |>
      mutate(scenario = scenario_name,
-            run = selected_run,) |>
+            run = selected_run) |>
      group_by(scenario, run, location, year) |>
      summarize(value = sum(weeks_flooded, na.rm = TRUE)) |>
      ungroup() |>
      mutate(performance_metric = "15 Total Weeks Flooded Annually") |>
      glimpse()
+
 
    prepped_inputs <- bind_rows(all_wetted_acre_days, all_decay, floodplain_habitat, max_yearly_flow_diff_table, weeks_flooded)
 
