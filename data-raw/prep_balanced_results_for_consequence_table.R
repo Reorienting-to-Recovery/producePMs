@@ -436,7 +436,7 @@ bind_rows(produce_flood_frequency_and_stage_pm(r_to_r_baseline_params, scenario 
 # Hydropower generation ability
 # Only works for ones we have calsim runs for
 all_inputs |>
-  filter(performance_metric == "18 Hydropower Generation: Difference in Potential Power Produnction From Baseline") |>
+  filter(performance_metric == "18 Hydropower Generation: Difference in Potential Power Production From Baseline") |>
   group_by(scenario, year) |>
   summarise(total_deliveries_to_mni = sum(value, na.rm = TRUE)) |>
   group_by(scenario) |>

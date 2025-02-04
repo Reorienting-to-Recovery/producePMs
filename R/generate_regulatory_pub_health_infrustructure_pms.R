@@ -196,14 +196,14 @@ storage_nodes <- map_nodes_to_storage_facilities$nodes
   diff_in_power_production <- all_storage  |>
     select(-volume_af) |>
     pivot_wider(names_from = scenario, values_from = power_gen_potential) |>
-    mutate(`Difference in Potential Power Produnction From Baseline` =  `Max Flow` - Baseline) |>
+    mutate(`Difference in Potential Power Production From Baseline` =  `Max Flow` - Baseline) |>
     group_by(year) |>
-    summarize(`Annual Difference in Potential Power Produnction From Baseline` = sum(`Difference in Potential Power Produnction From Baseline`, na.rm = TRUE)) |>
+    summarize(`Annual Difference in Potential Power Production From Baseline` = sum(`Difference in Potential Power Production From Baseline`, na.rm = TRUE)) |>
     ungroup() |>
     mutate(scenario = "Summarized diffs for Max Flow Scenrios") |>
     group_by(scenario) |>
-    summarise(`Average Annual Difference in Potential Power Produnction From Baseline` = mean(`Annual Difference in Potential Power Produnction From Baseline`),
-              `Min Difference in Potential Power Produnction From Baseline` = min(`Annual Difference in Potential Power Produnction From Baseline`),
-              `Max Difference in Potential Power Produnction From Baseline` = max(`Annual Difference in Potential Power Produnction From Baseline`)) |> glimpse()
+    summarise(`Average Annual Difference in Potential Power Production From Baseline` = mean(`Annual Difference in Potential Power Production From Baseline`),
+              `Min Difference in Potential Power Production From Baseline` = min(`Annual Difference in Potential Power Production From Baseline`),
+              `Max Difference in Potential Power Production From Baseline` = max(`Annual Difference in Potential Power Production From Baseline`)) |> glimpse()
 }
 

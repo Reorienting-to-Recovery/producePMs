@@ -354,7 +354,7 @@ create_calsim_non_cvpia_nodes_tidy <- function(){
     pivot_wider(id_cols = c(storage_facilities, year),
                 names_from = scenario, values_from = power_gen_potential) |>
     mutate(value =  `Max Flow` - Baseline,
-           performance_metric = "18 Hydropower Generation: Difference in Potential Power Produnction From Baseline",
+           performance_metric = "18 Hydropower Generation: Difference in Potential Power Production From Baseline",
            scenario = "Max Flow",
            location = storage_facilities,
            run = NA) |>
@@ -366,7 +366,7 @@ create_calsim_non_cvpia_nodes_tidy <- function(){
     pivot_wider(id_cols = c(storage_facilities, year),
                 names_from = scenario, values_from = power_gen_potential) |>
     mutate(value =  `Max Flow` - Baseline,
-           performance_metric = "18 Hydropower Generation: Difference in Potential Power Produnction From Baseline",
+           performance_metric = "18 Hydropower Generation: Difference in Potential Power Production From Baseline",
            scenario = "Max Flow & Max Habitat",
            location = storage_facilities,
            run = NA) |>
@@ -378,15 +378,37 @@ create_calsim_non_cvpia_nodes_tidy <- function(){
     pivot_wider(id_cols = c(storage_facilities, year),
                 names_from = scenario, values_from = power_gen_potential) |>
     mutate(value =  Elephant - Baseline,
-           performance_metric = "18 Hydropower Generation: Difference in Potential Power Produnction From Baseline",
+           performance_metric = "18 Hydropower Generation: Difference in Potential Power Production From Baseline",
            scenario = "Elephant",
            location = storage_facilities,
            run = NA) |>
     select(-`Baseline`, -Elephant, -`Max Flow`, -storage_facilities) |>
     glimpse()
 
+  diff_in_power_production_baseline <- all_storage  |>
+    select(-volume_af) |>
+    pivot_wider(id_cols = c(storage_facilities, year),
+                names_from = scenario, values_from = power_gen_potential) |>
+    mutate(value =  Baseline - Baseline,
+           performance_metric = "18 Hydropower Generation: Difference in Potential Power Production From Baseline",
+           scenario = "Baseline",
+           location = storage_facilities,
+           run = NA) |>
+    select(-`Baseline`, -Elephant, -`Max Flow`, -storage_facilities) |>
+    glimpse()
+
+  # fill in NAs for scenarios with no hydrpower metric
+  diff_in_power_production_no_model <- expand.grid(location = unique(all_storage$storage_facilities),
+                                                   year = unique(all_storage$year),
+                                                   scenario = c("Kitchen Sink", "Dry Year", "Platypus", "Tortoise")) |>
+    mutate(value = NA,
+           run = NA,
+           performance_metric = "18 Hydropower Generation: Difference in Potential Power Production From Baseline") |>
+  glimpse()
+
   hydropower_pm <- bind_rows(diff_in_power_production_max_flow, diff_in_power_production_max_flow_max_hab,
-                             diff_in_power_production_elephant)
+                             diff_in_power_production_elephant, diff_in_power_production_baseline,
+                             diff_in_power_production_no_model)
   #total deliveries agriculture
   del_nodes <- tibble(location = c("North of Delta", "North of Delta", "North of Delta", "North of Delta",
                                     "South of Delta", "South of Delta", "South of Delta", "South of Delta",
