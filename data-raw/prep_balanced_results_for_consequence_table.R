@@ -205,7 +205,7 @@ bind_rows(produce_2yr_30d_floodplain_acres_pm(r_to_r_baseline_params, scenario =
   pivot_wider(names_from = scenario, values_from = value) |> View()
 ### Access and Economics ### ---------------------------------------------------
 
-upper_sac_flow_eff <- DSMflow::flows_cfs$eff_sac |>
+upper_sac_flow_eff <- DSMflow::flows_cfs$eff |>
   filter(year(date) > 1979, year(date) < 2000) |>
   select(date, us_eff = `Upper Sacramento River`,
          sj_eff = `San Joaquin River`)
