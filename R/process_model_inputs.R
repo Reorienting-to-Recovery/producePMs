@@ -109,7 +109,7 @@ create_model_inputs_tidy_df <- function(model_parameters, scenario_name, selecte
    dry_years <- year_types |> filter(year_type == "dry") |> pull(water_year)
    wet_years <- year_types |> filter(year_type == "wet") |> pull(water_year)
 
-   dry_year_scenario_flow <- bind_rows(DSMflow::flows_cfs$eff_sac |>
+   dry_year_scenario_flow <- bind_rows(DSMflow::flows_cfs$eff |>
        filter(year(date) %in% as.numeric(dry_years)), DSMflow::flows_cfs$biop_itp_2018_2019 |>
        filter(year(date) %in% as.numeric(wet_years)))
 
@@ -122,12 +122,12 @@ create_model_inputs_tidy_df <- function(model_parameters, scenario_name, selecte
                        "Max Flow & Max Habitat" = DSMflow::flows_cfs$run_of_river,
                        "Max Flow" = DSMflow::flows_cfs$run_of_river,
                        "Max Hatchery" = DSMflow::flows_cfs$biop_itp_2018_2019,
-                       "Kitchen Sink" = DSMflow::flows_cfs$eff_sac,
+                       "Kitchen Sink" = DSMflow::flows_cfs$eff,
                        "Dry Year" = dry_year_scenario_flow, # TODO fix this one for non dry year make biop
                        "Habitat and Hatchery" = DSMflow::flows_cfs$biop_itp_2018_2019, # TODO update
                        "Planned Plus" = DSMflow::flows_cfs$biop_itp_2018_2019,
-                       "Platypus" = DSMflow::flows_cfs$eff_sac,
-                       "Tortoise" = DSMflow::flows_cfs$eff_sac,
+                       "Platypus" = DSMflow::flows_cfs$eff,
+                       "Tortoise" = DSMflow::flows_cfs$eff,
                        "Elephant" = DSMflow::flows_cfs$LTO_12a,
                        "Elephant Plus" = DSMflow::flows_cfs$LTO_12a_eff_dy) |>
      # TODO add balanced scenarios here

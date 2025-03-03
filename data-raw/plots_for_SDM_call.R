@@ -119,7 +119,7 @@ flow_data_biop <- DSMflow::flows_cfs$biop_itp_2018_2019 |>
   left_join(water_yt_lookup) |>
   glimpse()
 
-flow_data_eff <- DSMflow::flows_cfs$eff_sac |>
+flow_data_eff <- DSMflow::flows_cfs$eff |>
   pivot_longer(cols = -date, names_to = "watershed", values_to = "flow_cfs") |>
   filter(date >= lubridate::as_date("1979-01-01"),
          watershed == "Upper Sacramento River") |>

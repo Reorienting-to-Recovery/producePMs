@@ -80,7 +80,7 @@ produce_flood_frequency_and_stage_pm <- function(model_params, scenario, selecte
   dry_years <- year_types |> filter(year_type == "dry") |> pull(water_year)
   wet_years <- year_types |> filter(year_type == "wet") |> pull(water_year)
 
-  dry_year_scenario_flow <- bind_rows(DSMflow::flows_cfs$eff_sac |>
+  dry_year_scenario_flow <- bind_rows(DSMflow::flows_cfs$eff |>
                                         filter(year(date) %in% as.numeric(dry_years)), DSMflow::flows_cfs$biop_itp_2018_2019 |>
                                         filter(year(date) %in% as.numeric(wet_years)))
 
@@ -93,10 +93,10 @@ produce_flood_frequency_and_stage_pm <- function(model_params, scenario, selecte
                       "Max Flow & Max Habitat" = DSMflow::flows_cfs$run_of_river,
                       "Dry Years" = dry_year_scenario_flow, # fix this...
                       "Habitat and Hatchery" = DSMflow::flows_cfs$biop_itp_2018_2019,
-                      "Kitchen Sink" = DSMflow::flows_cfs$eff_sac,
+                      "Kitchen Sink" = DSMflow::flows_cfs$eff,
                       "Max Hatchery" = DSMflow::flows_cfs$biop_itp_2018_2019,
                       "Planned Plus" = DSMflow::flows_cfs$biop_itp_2018_2019,
-                      "Platypus" = DSMflow::flows_cfs$eff_sac,
+                      "Platypus" = DSMflow::flows_cfs$eff,
                       "Tortoise" = dry_year_scenario_flow,
                       "Elephant" = DSMflow::flows_cfs$LTO_12a,
                       "Elephant Plus" = DSMflow::flows_cfs$LTO_12a_eff_dy) |> # TODO update
